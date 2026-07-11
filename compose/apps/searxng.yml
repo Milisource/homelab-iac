@@ -1,0 +1,64 @@
+# searxng.yml — Private self-hosted search engine
+# Deploy: docker compose -f compose/apps/searxng.yml up -d
+# Node: heavensfeel (192.168.50.129)
+# Domain: search.example.com
+# Requires: SEARXNG_SECRET in .env or environment
+
+services:
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    container_name: searxng
+    volumes:
+      - /DATA/Apps/searxng/config:/etc/searxng:rw
+      - /DATA/Apps/searxng/config/external_bangs.json:/usr/local/searxng/searx/data/external_bangs.json:ro
+    environment:
+      - SEARXNG_BASE_URL=https://search.example.com/
+      - SEARXNG_SECRET=${SEARXNG_SECRET}
+      - SEARXNG_REDIS_URL=redis://searxng-redis:6379/0
+      - GRANIAN_WORKERS=4
+      - GRANIAN_BLOCKING_THREADS=4
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+    networks:
+      - traefik-overlay
+    depends_on:
+      redis:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+        max-file: 1
+    restart: unless-stopped
+
+  redis:
+    image: valkey/valkey:8-alpine
+    container_name: searxng-redis
+    command: valkey-server --save 30 1 --loglevel warning
+    volumes:
+      - /DATA/Apps/searxng/redis:/data
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+      - CHOWN
+    networks:
+      - traefik-overlay
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+networks:
+  traefik-overlay:
+    external: true

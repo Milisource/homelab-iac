@@ -1,0 +1,48 @@
+# prometheus.yml — Scrape configuration for Prometheus
+# Deployed at /DATA/Apps/prometheus/prometheus.yml on the monitoring node
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: node
+    static_configs:
+      - targets:
+        - 192.168.50.115:9100
+        labels: { hostname: milis-wonderspace }
+      - targets:
+        - 192.168.50.122:9100
+        labels: { hostname: milkymiracle }
+      - targets:
+        - 192.168.50.129:9100
+        labels: { hostname: heavensfeel }
+
+  - job_name: docker-engine
+    static_configs:
+      - targets:
+        - 192.168.50.115:9323
+        labels: { hostname: milis-wonderspace }
+      - targets:
+        - 192.168.50.122:9323
+        labels: { hostname: milkymiracle }
+      - targets:
+        - 192.168.50.129:9323
+        labels: { hostname: heavensfeel }
+
+  - job_name: cadvisor
+    static_configs:
+      - targets:
+        - 192.168.50.115:9300
+        labels: { hostname: milis-wonderspace }
+      - targets:
+        - 192.168.50.122:9300
+        labels: { hostname: milkymiracle }
+      - targets:
+        - 192.168.50.129:9300
+        labels: { hostname: heavensfeel }
+
+  - job_name: prometheus
+    static_configs:
+      - targets:
+        - localhost:9090

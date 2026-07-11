@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodic stale /mnt/network detection and recovery
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=10min
+Unit=detect-stale-network.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,21 @@
+[
+  {"t": "jf", "u": "https://jellyfin.example.com/web/#!/search.html?query={{{s}}}", "r": 0},
+  {"t": "jellyfin", "u": "https://jellyfin.example.com/web/#!/search.html?query={{{s}}}", "r": 0},
+  {"t": "son", "u": "https://sonarr.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "sonarr", "u": "https://sonarr.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "rad", "u": "https://radarr.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "radarr", "u": "https://radarr.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "lid", "u": "https://lidarr.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "lidarr", "u": "https://lidarr.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "navi", "u": "https://navi.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "navidrome", "u": "https://navi.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "immich", "u": "https://immich.example.com/search?query={{{s}}}", "r": 0},
+  {"t": "komga", "u": "https://komga.example.com/search?query={{{s}}}", "r": 0},
+  {"t": "n8n", "u": "https://n8n.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "grafana", "u": "https://grafana.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "prowlarr", "u": "https://prowlarr.example.com/search?query={{{s}}}", "r": 0},
+  {"t": "bazarr", "u": "https://bazarr.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "slskd", "u": "https://slskd.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "serr", "u": "https://serr.example.com/search?q={{{s}}}", "r": 0},
+  {"t": "jellyseerr", "u": "https://serr.example.com/search?q={{{s}}}", "r": 0}
+]

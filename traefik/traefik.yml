@@ -1,0 +1,45 @@
+# Static configuration for Traefik reverse proxy
+# Deployed on milkymiracle and milis-wonderland
+# Referenced by compose/stacks/traefik-stack.yml via host mount
+
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+api:
+  dashboard: true
+  insecure: true
+
+log:
+  level: INFO
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+
+certificatesResolvers:
+  le:
+    acme:
+      email: ${ACME_EMAIL}
+      storage: /certs/acme.json
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: traefik-overlay
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true

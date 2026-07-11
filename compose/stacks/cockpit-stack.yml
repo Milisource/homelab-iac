@@ -1,0 +1,39 @@
+# cockpit-stack.yml — Multi-node system management dashboard
+# Deploy: docker stack deploy -c compose/stacks/cockpit-stack.yml cockpit
+# Swarm global service: one replica per node, behind Traefik via file provider
+# Access: https://cockpit.example.com (resolves via DNS wildcard to VIP)
+#
+# Login: enter any LAN IP in "Connect to" field (blank defaults to 127.0.0.1
+#   inside the container, which won't reach the host's SSH). Use:
+#   - 192.168.50.115 (milis-wonderspace)
+#   - 192.168.50.122 (milkymiracle)
+#   - 192.168.50.129 (heavensfeel)
+#
+# Once logged in, add the other 2 nodes via Dashboard for multi-node management.
+#
+# Prerequisites on each node:
+#   sudo apt install -y cockpit-bridge cockpit-system cockpit-storaged
+#
+# SSH note: key-based auth only (PasswordAuthentication is disabled on all nodes).
+#   The host's ~/.ssh/id_ed25519 is mounted into the container for this purpose.
+#   known_hosts is also mounted so host key verification passes.
+
+version: "3.9"
+
+services:
+  cockpit:
+    image: quay.io/cockpit/ws:latest
+    environment:
+      COCKPIT_WS_ALLOW_UNSECURED: "true"
+      COCKPIT_SSH_KEY_PATH: "/root/.ssh/id_ed25519"
+    volumes:
+      - /home/user/.ssh/known_hosts:/root/.ssh/known_hosts:ro
+      - /home/user/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro
+    networks:
+      - traefik-overlay
+    deploy:
+      mode: global
+
+networks:
+  traefik-overlay:
+    external: true

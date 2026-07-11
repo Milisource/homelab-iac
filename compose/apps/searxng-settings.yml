@@ -1,0 +1,70 @@
+use_default_settings: true
+general:
+  instance_name: "Homelab Search"
+server:
+  secret_key: "${SEARXNG_SECRET}"
+  limiter: false
+  method: "GET"
+search:
+  safe_search: 0
+  autocomplete: ""
+  formats:
+    - html
+    - json
+  max_engine_time: 1.5
+outgoing:
+  request_timeout: 2.0
+  pool_connections: 200
+  max_keepalive_connections: 50
+  keepalive_expiry: 10.0
+engines:
+  # Fast, preferred engines with weight
+  - name: google
+    disabled: false
+    weight: 3
+  - name: duckduckgo
+    disabled: false
+    weight: 2
+  - name: startpage
+    disabled: false
+    weight: 2
+  - name: wikipedia
+    disabled: false
+    weight: 1
+  - name: stackoverflow
+    disabled: false
+    weight: 2
+  - name: github
+    disabled: false
+    weight: 1
+  - name: gitlab
+    disabled: false
+    weight: 1
+  # Remove completely broken engines
+  - name: radio browser
+    remove: true
+  - name: ahmia
+    remove: true
+  - name: torch
+    remove: true
+  # Disable rate-limited/slow/unwanted
+  - name: bing
+    disabled: true
+  - name: brave
+    disabled: true
+  - name: yahoo
+    disabled: true
+  - name: qwant
+    disabled: true
+  - name: yep
+    disabled: true
+  - name: presearch
+    disabled: true
+  - name: wikidata
+    disabled: true
+  - name: flickr
+    disabled: true
+  - name: pexels
+    disabled: true
+  - name: pinterest
+    disabled: true

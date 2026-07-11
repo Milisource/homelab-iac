@@ -1,0 +1,52 @@
+# traefik-stack.yml — Swarm reverse proxy stack
+# Deploy: docker stack deploy -c compose/stacks/traefik-stack.yml traefik
+# Requires: docker secret cf_dns_api_token
+#   echo <token> | docker secret create cf_dns_api_token -
+#
+# Traefik runs as a replicated service on nodes with node.labels.traefik == true.
+# Static config is at /etc/traefik/configs/traefik.yml on each manager node.
+
+services:
+  traefik:
+    image: traefik:latest
+    command:
+      - "--configFile=/configs/traefik.yml"
+    environment:
+      CF_DNS_API_TOKEN_FILE: /run/secrets/cf_dns_api_token
+    secrets:
+      - cf_dns_api_token
+    volumes:
+      - /etc/traefik/configs:/configs:ro
+      - /etc/traefik/dynamic:/etc/traefik/dynamic:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - traefik_certs:/certs
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+      - target: 443
+        published: 443
+        protocol: tcp
+        mode: host
+    networks:
+      - traefik-overlay
+    deploy:
+      mode: replicated
+      replicas: 2
+      placement:
+        constraints:
+          - node.labels.traefik == true
+      restart_policy:
+        condition: any
+
+networks:
+  traefik-overlay:
+    external: true
+
+secrets:
+  cf_dns_api_token:
+    external: true
+
+volumes:
+  traefik_certs:

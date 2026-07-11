@@ -1,0 +1,7 @@
+[Unit]
+Description=Force-unmount stale USB mount points
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/cleanup-stale-mounts.sh

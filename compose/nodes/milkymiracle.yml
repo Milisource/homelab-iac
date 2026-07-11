@@ -1,0 +1,65 @@
+# milkymiracle.yml — Media Streaming + Compute
+# Deploy: docker compose -f compose/nodes/milkymiracle.yml up -d
+# Node: milkymiracle (192.168.50.122) — i5-9500T, 16GB, NVMe, UHD 630
+
+services:
+  jellyfin:
+    image: linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "America/New_York"
+      groups: "1000,44,107"
+    volumes:
+      - /DATA/Media/Jellyfin/JellyConfig:/config
+      - /mnt/network/Torrents/Movies:/Movies
+      - /mnt/network/Torrents/TV Shows:/TV
+      - /mnt/network/Torrents/Anime:/Anime
+      - /dev/dri:/dev/dri
+      - /opt/vc/lib:/opt/vc/lib
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    group_add:
+      - "44"
+      - "107"
+
+  foundryvtt:
+    image: felddy/foundryvtt:latest
+    container_name: foundryvtt
+    user: "0:0"
+    environment:
+      FOUNDRY_USERNAME: ${FOUNDRY_USERNAME:-your-foundry-username}
+      FOUNDRY_ADMIN_KEY: ${FOUNDRY_ADMIN_KEY}
+      FOUNDRY_PASSWORD: ${FOUNDRY_PASSWORD}
+    volumes:
+      - /DATA/Apps/foundry:/data
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  glances:
+    image: nicolargo/glances:latest
+    container_name: glances
+    pid: host
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    command: glances -w
+
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: docker-proxy
+    environment:
+      CONTAINERS: 1
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "2376:2375"
+    restart: unless-stopped
+
+networks:
+  traefik-overlay:
+    external: true

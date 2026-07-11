@@ -1,0 +1,21 @@
+# Traefik dashboard router & basic auth
+#
+# NOTE: This config references a "dashboard" entryPoint that must be defined
+# in the static config (traefik.yml). If your static config does not define
+# a "dashboard" entryPoint, this config will cause a Traefik startup error.
+#
+#
+http:
+  routers:
+    traefik-dashboard:
+      entryPoints:
+        - "dashboard"
+      rule: "PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
+      service: api@internal
+      middlewares:
+        - dashboard-auth
+  middlewares:
+    dashboard-auth:
+      basicAuth:
+        users:
+          - "${TRAEFIK_DASHBOARD_USERS}"

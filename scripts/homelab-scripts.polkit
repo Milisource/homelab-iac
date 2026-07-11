@@ -1,0 +1,18 @@
+// Allow the homelab user to manage operational scripts without sudo.
+// Install:
+//   sudo cp homelab-scripts.polkit /usr/share/polkit-1/rules.d/10-homelab-scripts.rules
+// Reload: (polkit picks up changes automatically)
+//
+// This grants the ability to start/stop/status the following services
+// without a password prompt:
+//   - cleanup-stale-mounts.service
+//   - smart-health-check.service (+ timer)
+//   - detect-stale-network.service (+ timer)
+
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units" &&
+        subject.user == "mili" &&
+        action.lookup("unit").match(/^(cleanup-stale-mounts|smart-health-check|detect-stale-network)\.(service|timer)$/)) {
+        return polkit.Result.YES;
+    }
+});

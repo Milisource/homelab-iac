@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly SMART health check timer
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+Unit=smart-health-check.service
+
+[Install]
+WantedBy=timers.target

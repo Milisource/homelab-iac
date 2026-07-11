@@ -1,0 +1,265 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus" },
+    { "type": "datasource", "id": "loki", "name": "Loki" }
+  ],
+  "title": "Homelab Drilldown",
+  "tags": ["homelab", "drilldown"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "version": 1,
+  "uid": "homelab-drilldown",
+  "links": [
+    {
+      "title": "Homelab Overview",
+      "type": "dashboards",
+      "tags": ["homelab"]
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "name": "Container Restarts",
+        "type": "prometheus",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "changes(container_last_seen{hostname=~\"$node\"}[5m]) > 0",
+        "step": "60s",
+        "iconColor": "red",
+        "iconSize": 3,
+        "enable": true,
+        "showIn": 0,
+        "titleFormat": "Restart: {{ name }}",
+        "tagFormat": "restart"
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "node",
+        "type": "query",
+        "query": "label_values(node_load1, hostname)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "sort": 1,
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "label": "Node",
+        "current": { "selected": true, "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "container",
+        "type": "query",
+        "query": "label_values(container_cpu_usage_seconds_total{hostname=~\"$node\", name!=\"\"}, name)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "sort": 1,
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "label": "Container",
+        "current": { "selected": true, "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "CPU",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "100 - (avg by(hostname) (rate(node_cpu_seconds_total{mode=\"idle\", hostname=~\"$node\", hostname!=\"\"}[5m])) * 100)",
+        "legendFormat": "{{ hostname }}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineInterpolation": "smooth", "showPoints": "never" }
+        }
+      },
+      "options": {
+        "legend": { "showLegend": true, "placement": "bottom", "calcs": ["mean"] }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Memory",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "100 * (1 - avg by(hostname) (node_memory_MemAvailable_bytes{hostname=~\"$node\", hostname!=\"\"}) / avg by(hostname) (node_memory_MemTotal_bytes{hostname=~\"$node\", hostname!=\"\"}))",
+        "legendFormat": "{{ hostname }}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineInterpolation": "smooth", "showPoints": "never" }
+        }
+      },
+      "options": {
+        "legend": { "showLegend": true, "placement": "bottom", "calcs": ["mean"] }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Load",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "avg by(hostname) (node_load15{hostname=~\"$node\", hostname!=\"\"})",
+        "legendFormat": "{{ hostname }}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineInterpolation": "smooth", "showPoints": "never", "fillOpacity": 20 }
+        }
+      },
+      "options": {
+        "legend": { "showLegend": true, "placement": "bottom", "calcs": ["mean"] }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Container Restart Events",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "sum by(hostname, name) (changes(container_last_seen{hostname=~\"$node\", name=~\"$container\"}[5m]) > 0)",
+        "legendFormat": "{{ hostname }} — {{ name }}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "bars", "showPoints": "markers", "fillOpacity": 80 }
+        }
+      },
+      "options": {
+        "legend": { "showLegend": true, "placement": "bottom", "calcs": ["sum"] }
+      },
+      "description": "Container restart events. Each bar = a restart. Red annotation markers auto-plotted on all panels."
+    },
+    {
+      "id": 5,
+      "title": "Top Containers by CPU",
+      "type": "table",
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "topk(10, sum by(name, hostname) (rate(container_cpu_usage_seconds_total{hostname=~\"$node\", name=~\"$container\", name!=\"\"}[5m])) * 100)",
+        "legendFormat": "{{ name }}",
+        "refId": "A",
+        "format": "table",
+        "instant": true
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 30 },
+            { "color": "red", "value": 70 }
+          ]},
+          "custom": { "align": "auto", "displayMode": "auto" }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              { "id": "displayName", "value": "CPU %" },
+              { "id": "custom.displayMode", "value": "color-background" }
+            ]
+          }
+        ]
+      },
+      "options": { "sortBy": [{ "displayName": "CPU %", "desc": true }] }
+    },
+    {
+      "id": 6,
+      "title": "Top Containers by Memory",
+      "type": "table",
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "topk(10, container_memory_usage_bytes{hostname=~\"$node\", name=~\"$container\", name!=\"\"})",
+        "legendFormat": "{{ name }}",
+        "refId": "A",
+        "format": "table",
+        "instant": true
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 268435456 },
+            { "color": "red", "value": 1073741824 }
+          ]},
+          "custom": { "align": "auto", "displayMode": "auto" }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              { "id": "displayName", "value": "Memory" },
+              { "id": "custom.displayMode", "value": "color-background" }
+            ]
+          }
+        ]
+      },
+      "options": { "sortBy": [{ "displayName": "Memory", "desc": true }] }
+    },
+    {
+      "id": 7,
+      "title": "Log Volume by Level",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 15 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{
+        "expr": "sum by(detected_level) (rate({job=\"docker\"} [$5m]))",
+        "legendFormat": "{{ detected_level }}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineInterpolation": "smooth", "showPoints": "never", "fillOpacity": 30 }
+        }
+      },
+      "options": {
+        "legend": { "showLegend": true, "placement": "bottom" }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Recent Errors & Warnings",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 15 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [{
+        "expr": "{job=\"docker\"} |~ \"(?i)(error|warn|exception|fail|timeout|crash|kill|oom)\"",
+        "refId": "A"
+      }],
+      "options": {
+        "showLabels": false,
+        "showTime": true,
+        "wrapLogMessage": true,
+        "prettifyLogs": true,
+        "sortOrder": "Descending"
+      }
+    }
+  ]
+}

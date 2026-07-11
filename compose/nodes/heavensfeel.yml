@@ -1,0 +1,280 @@
+# heavensfeel.yml — Always-on lightweight daemons
+# Deploy: docker compose -f compose/nodes/heavensfeel.yml up -d
+# Node: heavensfeel (192.168.50.129) — 15W N95, 512GB SSD, 16GB RAM
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    environment:
+      DOMAIN: "https://vault.example.com"
+      SIGNUPS_ALLOWED: "false"
+      ADMIN_TOKEN: ${VAULTWARDEN_ADMIN_TOKEN}
+    volumes:
+      - /DATA/Apps/vaultwarden/data:/data
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  archisteamfarm:
+    image: justarchi/archisteamfarm:latest
+    container_name: archisteamfarm
+    environment:
+      ASF_PATH: "/app"
+      ASF_USER: "asf"
+      ASPNETCORE_HTTP_PORTS: "8080"
+      DOTNET_RUNNING_IN_CONTAINER: "true"
+      TZ: "UTC"
+    volumes:
+      - /DATA/Apps/asf/app/config:/app/config
+      - /DATA/Apps/asf/app/logs:/app/logs
+      - /DATA/Apps/asf/app/plugins:/app/plugins
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  byparr:
+    image: ghcr.io/thephaseless/byparr:latest
+    container_name: byparr
+    entrypoint:
+      - uv
+      - run
+      - main.py
+    environment:
+      USE_XVFB: "true"
+      USE_HEADLESS: "false"
+      LOG_LEVEL: "INFO"
+    ports:
+      - "8191:8191"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8191/health"]
+      interval: 900s
+      timeout: 30s
+      retries: 3
+      start_period: 5s
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    environment:
+      TZ: "America/New_York"
+      WEBHOOK_URL: "https://n8n.example.com"
+      N8N_RESTRICT_FILE_ACCESS_TO: "/Home"
+    volumes:
+      - /DATA/Apps/n8n/.n8n:/home/node/.n8n
+      - /mnt/network/Home:/Home
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  jellyseerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: jellyseerr
+    environment:
+      TZ: "America/New_York"
+    volumes:
+      - /DATA/Media/Jellyserr/config:/app/config
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  qui:
+    image: ghcr.io/autobrr/qui:latest
+    container_name: qui
+    entrypoint:
+      - /usr/local/bin/qui
+    command:
+      - serve
+    volumes:
+      - /DATA/Net/qui:/config
+      - /mnt/network/Torrents:/downloads
+    ports:
+      - "7476:7476"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7476/health || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  termix:
+    image: ghcr.io/lukegus/termix:latest
+    container_name: termix
+    environment:
+      PORT: "5600"
+      DATA_DIR: "/app/data"
+      NODE_ENV: "production"
+    volumes:
+      - /DATA/Net/termix:/app/data
+    ports:
+      - "5600:5600"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:30001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: home.example.com
+    volumes:
+      - /DATA/Apps/homepage:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  glances:
+    image: nicolargo/glances:latest
+    container_name: glances
+    pid: host
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    command: glances -w
+
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: docker-proxy
+    environment:
+      CONTAINERS: 1
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "2376:2375"
+    restart: unless-stopped
+
+  camofox:
+    build:
+      context: /home/user/docker/build/camofox
+      dockerfile: Dockerfile.ci
+      args:
+        CAMOUFOX_VERSION: "135.0.1"
+        CAMOUFOX_RELEASE: "beta.24"
+    image: camofox-browser:local
+    container_name: camofox
+    environment:
+      CAMOFOX_PORT: "9377"
+      MAX_OLD_SPACE_SIZE: "512"
+      NODE_ENV: "production"
+      ENABLE_VNC: "1"
+      VNC_PASSWORD: ${CAMOFOX_VNC_PASSWORD}
+      VNC_BIND: "0.0.0.0"
+      NOVNC_PORT: "6080"
+    volumes:
+      - /DATA/Apps/camofox:/root/.camofox
+    ports:
+      - "9377:9377"
+      - "6080:6080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9377/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ═════════════════════════════════════════════════
+  # MONITORING STACK
+  # ═════════════════════════════════════════════════
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    volumes:
+      - /DATA/Apps/uptime-kuma:/app/data
+    ports:
+      - "3001:3001"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "--eval", "require('http').get('http://localhost:3001',r=>{process.exit(r.statusCode<400?0:1)}).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - /DATA/Apps/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /DATA/Apps/prometheus/data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    ports:
+      - "9090:9090"
+    user: "1000:1000"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SERVER_ROOT_URL: "https://grafana.example.com"
+    volumes:
+      - /DATA/Apps/grafana/data:/var/lib/grafana
+      - /DATA/Apps/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3002:3000"
+    user: "0"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    user: "0"
+    volumes:
+      - /DATA/Apps/loki/wal:/loki/wal
+      - /DATA/Apps/loki/data:/loki/data
+    command:
+      - "--config.file=/etc/loki/local-config.yaml"
+    ports:
+      - "3100:3100"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  changedetection:
+    image: ghcr.io/dgtlmoon/changedetection.io:latest
+    container_name: changedetection
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      BASE_URL: "https://watch.example.com"
+    volumes:
+      - /DATA/Apps/changedetection:/datastore
+    ports:
+      - "5000:5000"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+networks:
+  traefik-overlay:
+    external: true

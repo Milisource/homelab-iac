@@ -1,0 +1,28 @@
+# Traefik middleware definitions (file provider)
+# Applied globally to all routers via the file provider.
+http:
+  middlewares:
+    secure-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        forceSTSHeader: false
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+
+  # The rate limit here is actually kinda relaxed, I find it more important
+  # to have just *a* rate limiter than to *not* have a rate limiter.
+  # Some security guys would probably kill me for that.
+  # Good thing this isn't middleware for production!
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+
+    crowdsec-bouncer:
+      forwardAuth:
+        address: "http://crowdsec-bouncer:7070/api/v1/forwardAuth"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - X-CrowdSec-Remote-IP

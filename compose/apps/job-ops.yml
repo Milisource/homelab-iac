@@ -1,0 +1,34 @@
+# job-ops.yml — Automated job search, scoring, and application tracking
+# Deploy: docker compose -f compose/apps/job-ops.yml up -d
+# Node: milkymiracle (192.168.50.122) — i5-9500T, 16GB, NVMe
+# Domain: jobs.example.com
+# Requires: .env file at /DATA/Apps/job-ops/.env
+
+services:
+  job-ops:
+    image: ghcr.io/dakheera47/job-ops:latest
+    container_name: job-ops
+    ports:
+      - "3005:3001"
+    volumes:
+      - /DATA/Apps/job-ops/data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - PYTHON_PATH=/usr/bin/python3
+    env_file:
+      - path: /DATA/Apps/job-ops/.env
+        required: false
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  traefik-overlay:
+    external: true

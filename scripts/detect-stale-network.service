@@ -1,0 +1,7 @@
+[Unit]
+Description=Detect and recover stale /mnt/network mount
+After=network.target local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/detect-stale-network.sh

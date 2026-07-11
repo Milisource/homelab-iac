@@ -1,0 +1,258 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# standalone.yml — Traefik dynamic router config (file provider)
+# ──────────────────────────────────────────────────────────────────────────────
+# Rate limiting is applied PER-ROUTER, not at the entrypoint level, so SPA
+# static assets (JS chunks, CSS, fonts) are not rate-limited. This was an issue 
+# in a previous iteration and caused massive problems. So, now, only API paths
+# or full hosts (for non-SPA services) carry the rate-limit middleware.
+#
+# See dynamic.yml for middlewear.
+#
+# When adding a new service, ask: Is it a SPA or Non-SPA?
+#   - SPA (many JS chunks): add TWO routers — one for API paths with
+#     `middlewares: [rate-limit]`, one catch-all without. See `n8n`.
+#   - Non-SPA (minimal frontend): add `middlewares: [rate-limit]` to a single
+#     router.  If it's internal-only, omit rate-limit.
+#
+# This file must exist on EVERY node that runs a Traefik replica.
+# ──────────────────────────────────────────────────────────────────────────────
+
+http:
+
+  # ── Servers Transports ─────────────────────────────────────────────────────
+  serversTransports:
+    cockpit-transport:
+      insecureSkipVerify: true
+
+  # ── Routers ─────────────────────────────────────────────────────────────────
+  routers:
+
+    # ── heavensfeel (apps stack) ─────────────────────────────────────────
+    vaultwarden:
+      entryPoints: [websecure]
+      rule: "Host(`vault.example.com`)"
+      service: vaultwarden
+      middlewares: [rate-limit]
+      tls: { certResolver: le }
+
+    n8n-api:
+      entryPoints: [websecure]
+      rule: "Host(`n8n.example.com`) && (PathPrefix(`/rest`) || PathPrefix(`/webhook`) || PathPrefix(`/webhook-waiting`))"
+      service: n8n
+      middlewares: [rate-limit]
+      tls: { certResolver: le }
+    n8n:
+      entryPoints: [websecure]
+      rule: "Host(`n8n.example.com`)"
+      service: n8n
+      tls: { certResolver: le }
+
+    archisteamfarm:
+      entryPoints: [websecure]
+      rule: "Host(`asf.example.com`)"
+      service: archisteamfarm
+      tls: { certResolver: le }
+
+    # ── milis-wonderspace (media stack) ──────────────────────────────────────────
+    copyparty:
+      entryPoints: [websecure]
+      rule: "Host(`cloud.example.com`)"
+      service: copyparty
+      tls: { certResolver: le }
+
+    navidrome:
+      entryPoints: [websecure]
+      rule: "Host(`navi.example.com`)"
+      service: navidrome
+      tls: { certResolver: le }
+
+    jellyseerr:
+      entryPoints: [websecure]
+      rule: "Host(`serr.example.com`)"
+      service: jellyseerr
+      tls: { certResolver: le }
+
+    sonarr:
+      entryPoints: [websecure]
+      rule: "Host(`sonarr.example.com`)"
+      service: sonarr
+      tls: { certResolver: le }
+
+    radarr:
+      entryPoints: [websecure]
+      rule: "Host(`radarr.example.com`)"
+      service: radarr
+      tls: { certResolver: le }
+
+    lidarr:
+      entryPoints: [websecure]
+      rule: "Host(`lidarr.example.com`)"
+      service: lidarr
+      tls: { certResolver: le }
+
+    komga:
+      entryPoints: [websecure]
+      rule: "Host(`komga.example.com`)"
+      service: komga
+      tls: { certResolver: le }
+
+    # ── milkymiracle (media + compute) ───────────────────────────────────────
+    jellyfin:
+      entryPoints: [websecure]
+      rule: "Host(`jellyfin.example.com`)"
+      service: jellyfin
+      tls: { certResolver: le }
+
+    foundryvtt:
+      entryPoints: [websecure]
+      rule: "Host(`foundry.example.com`)"
+      service: foundryvtt
+      tls: { certResolver: le }
+
+    # ── Cross-node services ──────────────────────────────────────────────────
+    homepage:
+      entryPoints: [websecure]
+      rule: "Host(`home.example.com`)"
+      service: homepage
+      tls: { certResolver: le }
+
+    jobs:
+      entryPoints: [websecure]
+      rule: "Host(`jobs.example.com`)"
+      service: jobs
+      tls: { certResolver: le }
+
+    chat:
+      entryPoints: [websecure]
+      rule: "Host(`chat.example.com`)"
+      service: chat
+      tls: { certResolver: le }
+
+    bazarr:
+      entryPoints: [websecure]
+      rule: "Host(`bazarr.example.com`)"
+      service: bazarr
+      tls: { certResolver: le }
+
+    prowlarr:
+      entryPoints: [websecure]
+      rule: "Host(`prowlarr.example.com`)"
+      service: prowlarr
+      tls: { certResolver: le }
+
+    immich:
+      entryPoints: [websecure]
+      rule: "Host(`immich.example.com`)"
+      service: immich
+      tls: { certResolver: le }
+
+    status:
+      entryPoints: [websecure]
+      rule: "Host(`status.example.com`)"
+      service: uptime-kuma
+      tls: { certResolver: le }
+
+    watch:
+      entryPoints: [websecure]
+      rule: "Host(`watch.example.com`)"
+      service: changedetection
+      tls: { certResolver: le }
+
+    grafana:
+      entryPoints: [websecure]
+      rule: "Host(`grafana.example.com`)"
+      service: grafana
+      tls: { certResolver: le }
+
+    qui:
+      entryPoints: [websecure]
+      rule: "Host(`qui.example.com`)"
+      service: qui
+      tls: { certResolver: le }
+
+    termix:
+      entryPoints: [websecure]
+      rule: "Host(`termix.example.com`)"
+      service: termix
+      tls: { certResolver: le }
+
+    searxng:
+      entryPoints: [websecure]
+      rule: "Host(`search.example.com`)"
+      service: searxng
+      tls: { certResolver: le }
+
+    slskd:
+      entryPoints: [websecure]
+      rule: "Host(`slskd.example.com`)"
+      service: slskd
+      tls: { certResolver: le }
+
+    # ── Cockpit (native, per-node) ─────────────────────────────────────────
+    cockpit-server:
+      entryPoints: [websecure]
+      rule: "Host(`cockpit.example.com`)"
+      service: cockpit-server
+      tls: { certResolver: le }
+    cockpit-eserver:
+      entryPoints: [websecure]
+      rule: "Host(`cockpite.example.com`)"
+      service: cockpit-eserver
+      tls: { certResolver: le }
+    cockpit-heaven:
+      entryPoints: [websecure]
+      rule: "Host(`cockpith.example.com`)"
+      service: cockpit-heaven
+      tls: { certResolver: le }
+
+    qbt:
+      entryPoints: [websecure]
+      rule: "Host(`qbt.example.com`)"
+      service: qbt
+      tls: { certResolver: le }
+
+  # ── Services ────────────────────────────────────────────────────────────────
+  services:
+    vaultwarden:    { loadBalancer: { servers: [{ url: "http://vaultwarden:80" }] } }
+    n8n:            { loadBalancer: { servers: [{ url: "http://n8n:5678" }] } }
+    archisteamfarm: { loadBalancer: { servers: [{ url: "http://archisteamfarm:1242" }] } }
+    copyparty:      { loadBalancer: { servers: [{ url: "http://copyparty:3923" }] } }
+    navidrome:      { loadBalancer: { servers: [{ url: "http://navidrome:4533" }] } }
+    jellyseerr:     { loadBalancer: { servers: [{ url: "http://jellyseerr:5055" }] } }
+    sonarr:         { loadBalancer: { servers: [{ url: "http://sonarr:8989" }] } }
+    radarr:         { loadBalancer: { servers: [{ url: "http://radarr:7878" }] } }
+    lidarr:         { loadBalancer: { servers: [{ url: "http://lidarr:8686" }] } }
+    komga:          { loadBalancer: { servers: [{ url: "http://komga:25600" }] } }
+    jellyfin:       { loadBalancer: { servers: [{ url: "http://jellyfin:8096" }] } }
+    foundryvtt:     { loadBalancer: { servers: [{ url: "http://foundryvtt:30000" }] } }
+    homepage:       { loadBalancer: { servers: [{ url: "http://homepage:3000" }] } }
+    jobs:           { loadBalancer: { servers: [{ url: "http://job-ops:3001" }] } }
+    chat:           { loadBalancer: { servers: [{ url: "http://open-webui:8080" }] } }
+    bazarr:         { loadBalancer: { servers: [{ url: "http://bazarr:6767" }] } }
+    prowlarr:       { loadBalancer: { servers: [{ url: "http://prowlarr:9696" }] } }
+    uptime-kuma:    { loadBalancer: { servers: [{ url: "http://uptime-kuma:3001" }] } }
+    changedetection: { loadBalancer: { servers: [{ url: "http://changedetection:5000" }] } }
+    grafana:        { loadBalancer: { servers: [{ url: "http://grafana:3000" }] } }
+    qui:            { loadBalancer: { servers: [{ url: "http://qui:7476" }] } }
+    termix:         { loadBalancer: { servers: [{ url: "http://termix:5600" }] } }
+    searxng:        { loadBalancer: { servers: [{ url: "http://searxng:8080" }] } }
+    qbt:            { loadBalancer: { servers: [{ url: "http://192.168.50.115:8090" }] } }
+    slskd:          { loadBalancer: { servers: [{ url: "http://slskd:5030" }] } }
+    immich:         { loadBalancer: { servers: [{ url: "http://immich_server:2283" }] } }
+
+    # ── Cockpit (native per-node, HTTPS backend) ────────────────────────────
+    cockpit-server:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.50.115:9090"
+        serversTransport: cockpit-transport
+    cockpit-eserver:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.50.122:9090"
+        serversTransport: cockpit-transport
+    cockpit-heaven:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.50.129:9091"
+        serversTransport: cockpit-transport

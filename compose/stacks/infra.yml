@@ -1,0 +1,30 @@
+# infra.yml — Swarm infrastructure stack (CrowdSec Traefik bouncer)
+# Deploy: docker stack deploy -c compose/stacks/infra.yml infra
+# Node: milkymiracle (Traefik + CrowdSec bouncer)
+
+version: "3.9"
+
+networks:
+  traefik-public:
+    external: true
+
+services:
+  crowdsec-bouncer:
+    image: fbonalair/traefik-crowdsec-bouncer:latest
+    environment:
+      CROWDSEC_AGENT_HOST: ${CROWDSEC_AGENT_HOST}
+      CROWDSEC_BOUNCER_API_KEY: ${CROWDSEC_BOUNCER_API_KEY}
+      PORT: "7070"
+      GIN_MODE: release
+      TRUSTED_PROXIES: "0.0.0.0/0"
+    networks:
+      - traefik-public
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == milkymiracle
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          memory: 64M

@@ -1,0 +1,7 @@
+[Unit]
+Description=Weekly SMART health check for storage drives
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/smart-health-check.sh

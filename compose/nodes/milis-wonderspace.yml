@@ -1,0 +1,383 @@
+# milis-wonderspace.yml — Storage, Downloads, *Arr, Media, AI
+# Deploy: docker compose -f compose/nodes/milis-wonderspace.yml up -d
+# Node: milis-wonderspace (192.168.50.115) — i7-7700, 16GB, 29TB pool
+
+services:
+  # ═══════════════════════════════════════════════════════
+  # NETWORK ISOLATION
+  # ═══════════════════════════════════════════════════════
+
+  vpn-gateway:
+    image: qmcgaw/gluetun:latest
+    container_name: vpn-gateway
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    environment:
+      VPN_SERVICE_PROVIDER: ${VPN_SERVICE_PROVIDER}
+      VPN_TYPE: ${VPN_TYPE:-openvpn}
+      VPN_PORT_FORWARDING: ${VPN_PORT_FORWARDING:-off}
+      FIREWALL_OUTBOUND_SUBNETS: "192.168.0.0/16,100.64.0.0/10,172.16.0.0/12"
+      DNS_SERVER: "on"
+      DNS_UPSTREAM_RESOLVER_TYPE: "DoT"
+      DNS_UPSTREAM_RESOLVERS: "cloudflare"
+      DNS_CACHING: "on"
+      BLOCK_MALICIOUS: "on"
+      TZ: "America/New_York"
+      PUID: "1000"
+      PGID: "1000"
+      LOG_LEVEL: "info"
+    volumes:
+      - /DATA/AppData/vpn-gateway:/gluetun
+      - ./secrets/vpn_user:/run/secrets/vpn_user:ro
+      - ./secrets/vpn_password:/run/secrets/vpn_password:ro
+    ports:
+      - "6789:6789/tcp"
+      - "6881:6881/tcp"
+      - "8090:8090/tcp"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "/gluetun-entrypoint healthcheck"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  download-client:
+    image: qbittorrent-ee:latest
+    container_name: download-client
+    network_mode: "service:vpn-gateway"
+    environment:
+      TZ: "America/New_York"
+      WEBUI_PORT: "8090"
+      PUID: "1000"
+      PGID: "1000"
+    volumes:
+      - /DATA/Net:/config
+      - /mnt/network/Torrents:/downloads
+    restart: unless-stopped
+    depends_on:
+      vpn-gateway:
+        condition: service_healthy
+
+  # ═══════════════════════════════════════════════════
+  # *ARR STACK (media management, data on mergerFS)
+  # ═══════════════════════════════════════════════════
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+      XDG_CONFIG_HOME: "/config/xdg"
+      SONARR_BRANCH: "main"
+      SONARR_CHANNEL: "v4-stable"
+      TMPDIR: "/run/sonarr-temp"
+    volumes:
+      - /DATA/Arr/sonarr:/config
+      - /mnt/network/Torrents:/downloads
+      - /mnt/network/Torrents/Anime:/anime
+      - /mnt/network/Torrents/TV Shows:/tv
+    ports:
+      - "8989:8989"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+      XDG_CONFIG_HOME: "/config/xdg"
+      TMPDIR: "/run/radarr-temp"
+    volumes:
+      - /DATA/Arr/radarr:/config
+      - /mnt/network/Torrents/Movies:/movies
+      - /mnt/network/Torrents:/downloads
+    ports:
+      - "7878:7878"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  lidarr:
+    image: ghcr.io/linuxserver-labs/prarr:lidarr-plugins
+    container_name: lidarr
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+      XDG_CONFIG_HOME: "/config/xdg"
+      TMPDIR: "/run/lidarr-temp"
+    volumes:
+      - /DATA/Arr/lidarr:/config
+      - /mnt/network/Torrents/Music:/music
+      - /mnt/network/Torrents:/downloads
+      - /mnt/network/Torrents/Soulseek Hell:/downloads/slskd
+    ports:
+      - "8686:8686"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "America/New_York"
+    volumes:
+      - /DATA/Arr/prowlarr:/config
+    ports:
+      - "9696:9696"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+      XDG_CONFIG_HOME: "/config/xdg"
+    volumes:
+      - /DATA/Arr/bazarr:/config
+      - /mnt/network/Torrents:/downloads
+      - /mnt/network/Torrents/Anime:/anime
+      - /mnt/network/Torrents/Movies:/movies
+      - /mnt/network/Torrents/TV Shows:/tv
+    ports:
+      - "6767:6767"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  cleanuparr:
+    image: ghcr.io/cleanuparr/cleanuparr:latest
+    container_name: cleanuparr
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "America/New_York"
+    volumes:
+      - /DATA/Arr/cleanuparr:/config
+    ports:
+      - "11011:11011"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  # ════════════════════════════════════════
+  # MEDIA SERVERS (direct mergerFS access)
+  # ════════════════════════════════════════
+
+  navidrome:
+    image: deluan/navidrome:latest
+    container_name: navidrome
+    environment:
+      ND_MUSICFOLDER: "/music"
+      ND_DATAFOLDER: "/data"
+      ND_CONFIGFILE: "/data/navidrome.toml"
+      ND_PORT: "4533"
+      ND_BASEURL: "https://navi.example.com"
+      ND_ENABLESHARING: "true"
+      ND_IMAGECACHESIZE: "4GB"
+      ND_TRANSCODINGCACHESIZE: "8GB"
+      ND_AUTHREQUESTLIMIT: "50"
+      ND_AUTHWINDOWLENGTH: "25s"
+      TZ: "America/New_York"
+      ND_LASTFM_APIKEY: ${NAVIDROME_LASTFM_APIKEY}
+      ND_LASTFM_SECRET: ${NAVIDROME_LASTFM_SECRET}
+    volumes:
+      - /DATA/Media/Navidrome:/data
+      - /mnt/network/Torrents/Music:/music
+    ports:
+      - "4533:4533"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  komga:
+    image: gotson/komga:latest
+    container_name: komga
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "America/New_York"
+    volumes:
+      - /DATA/Media/Komga/config:/config
+      - /DATA/Media/Komga/data:/data
+      - /mnt/network/Torrents/Books/Manga:/manga
+      - /mnt/network/Torrents/Books/Books:/books
+      - /mnt/network/Torrents/Books/Comics:/comics
+      - /mnt/network/Torrents/Books/Artbooks:/artbooks
+    ports:
+      - "25600:25600"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  slskd:
+    image: slskd/slskd:0.25.0
+    container_name: slskd
+    user: "1000:1000"
+    entrypoint:
+      - /usr/bin/tini
+      - --
+      - /entrypoint.sh
+    command:
+      - "./slskd"
+    environment:
+      SLSKD_REMOTE_CONFIGURATION: "true"
+      SLSKD_HTTP_PORT: "5030"
+      SLSKD_HTTPS_PORT: "5031"
+      SLSKD_SLSK_LISTEN_PORT: "50300"
+      SLSKD_SLSK_USERNAME: ${SLSKD_SLSK_USERNAME}
+      SLSKD_SLSK_PASSWORD: ${SLSKD_SLSK_PASSWORD}
+      SLSKD_SHARED_DIR: "/music"
+      SLSKD_DOWNLOADS_DIR: "/downloads"
+    volumes:
+      - /mnt/network/Torrents/Music:/music
+      - /DATA/Media/slskd:/app
+      - /mnt/network/Torrents/Soulseek Hell:/downloads
+    ports:
+      - "5030:5030"
+      - "5031:5031"
+      - "50300:50300"
+    restart: unless-stopped
+    networks:
+      - traefik-overlay
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5030/health"]
+      interval: 60s
+      timeout: 3s
+      retries: 3
+      start_period: 3600s
+
+  copyparty:
+    image: copyparty/ac:latest
+    container_name: copyparty
+    entrypoint:
+      - python3
+      - -m
+      - copyparty
+      - -c
+      - /z/initcfg
+      - --xff-src=10.0.0.0/16
+      - --rproxy=1
+    environment:
+      LD_PRELOAD: "/usr/lib/libmimalloc-secure.so.2"
+      PYTHONUNBUFFERED: "1"
+      XDG_CONFIG_HOME: "/cfg"
+    volumes:
+      - /mnt/network:/root
+      - /DATA/Apps/Copyparty:/cfg
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  # ═════════════════════════════════════════════════
+  # BACKUP
+  # ═════════════════════════════════════════════════
+
+  borgmatic:
+    image: ghcr.io/borgmatic-collective/borgmatic:latest
+    container_name: borgmatic
+    environment:
+      TZ: "America/New_York"
+      BORGMATIC_CONFIG: "/etc/borgmatic/config.yaml"
+      BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK: "yes"
+      CRON: "0 6 * * *"
+    volumes:
+      - /DATA/Apps/borgmatic:/etc/borgmatic
+      - /DATA/Apps/borgmatic/repos:/repos
+      - /DATA:/source/DATA:ro
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse:/dev/fuse
+    restart: unless-stopped
+
+  # ═════════════════════════════════════════════════
+  # AI STACK
+  # ═════════════════════════════════════════════════
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    volumes:
+      - /DATA/Apps/ollama/models:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:latest
+    container_name: open-webui
+    environment:
+      OLLAMA_BASE_URL: "http://ollama:11434"
+      WEBUI_SECRET_KEY: ${OPENWEBUI_SECRET_KEY}
+      WEBUI_NAME: "AI Chat"
+      ENABLE_SIGNUP: "false"
+      WEBUI_SEARCH_ENGINE: "searxng"
+      SEARXNG_QUERY_URL: ${SEARXNG_QUERY_URL:-http://192.168.50.129:8080/search}
+    volumes:
+      - /DATA/Apps/open-webui:/app/backend/data
+    ports:
+      - "3000:8080"
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  glances:
+    image: nicolargo/glances:latest
+    container_name: glances
+    pid: host
+    restart: unless-stopped
+    command: glances -w
+
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: docker-proxy
+    environment:
+      CONTAINERS: 1
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "2376:2375"
+    restart: unless-stopped
+
+networks:
+  traefik-overlay:
+    external: true
