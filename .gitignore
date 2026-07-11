@@ -1,0 +1,23 @@
+# Secrets
+.env
+
+# Logs
+*.log
+
+# Dependencies
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Docker build artifacts
+.custom_build/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
