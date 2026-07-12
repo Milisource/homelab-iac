@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homelab Infra</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:18px;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color:#1c1917;background:#fafaf9;line-height:1.6;padding-bottom:3rem
+}
+.container{max-width:1100px;margin:0 auto;padding:0 1.5rem}
+a{color:#2563eb;text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* header */
+header{padding:2.5rem 0 1.5rem}
+header h1{font-size:2rem;font-weight:600;letter-spacing:-0.02em;color:#1c1917}
+header p{font-size:0.95rem;color:#78716c;margin-top:0.2rem}
+header .gh-link{display:inline-block;margin-top:0.5rem;font-size:0.85rem}
+
+/* sections */
+section+.section{margin-top:2.5rem}
+.section h2{
+  font-size:1.2rem;font-weight:600;color:#292524;
+  display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;
+  padding-bottom:0.5rem;border-bottom:1.5px solid #e7e5e4
+}
+.section h2 .count{font-size:0.75rem;font-weight:400;color:#a8a29e;background:#f0efed;padding:0.1rem 0.5rem;border-radius:3px}
+
+/* === SVG Topology === */
+#topology-wrap{background:#fff;border:1px solid #e7e5e4;border-radius:6px;padding:0.5rem 0}
+#topology-wrap svg{display:block;width:100%;height:auto}
+.topology-node{cursor:pointer}
+.topology-node rect{fill:#fff;stroke:#d6d3d1;stroke-width:1.5;transition:stroke 0.12s,fill 0.12s}
+.topology-node:hover rect{stroke:#78716c}
+.topology-node.active rect{stroke:#2563eb;fill:#eff6ff}
+.topology-node .title{font-size:14px;font-weight:600;fill:#1c1917;dominant-baseline:central;text-anchor:middle}
+.topology-node .subtitle{font-size:11px;fill:#78716c;dominant-baseline:central;text-anchor:middle}
+.topology-node .accent{fill:#2563eb}
+.node-infra .accent{fill:#525252}
+.node-service .accent{fill:#0d9488}
+#topology-legend{
+  display:flex;flex-wrap:wrap;gap:0.4rem 1rem;
+  padding:0.5rem 1rem;border-top:1px solid #e7e5e4;
+  font-size:0.8rem;color:#78716c
+}
+#topology-legend span{display:flex;align-items:center;gap:0.35rem}
+#topology-legend .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+/* === Server Cards === */
+.server-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem}
+.card{
+  background:#fff;border:1px solid #e7e5e4;border-radius:6px;
+  padding:1.25rem 1.25rem;transition:border-color 0.15s,box-shadow 0.15s
+}
+.card:hover{border-color:#d6d3d1;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.card h3{font-size:1.1rem;font-weight:600;margin-bottom:0.1rem}
+.card .ip{font-size:0.85rem;color:#78716c;margin-bottom:0.05rem;font-variant-numeric:tabular-nums}
+.card .role{font-size:0.85rem;color:#2563eb;margin-bottom:0.35rem}
+.card .specs{font-size:0.82rem;color:#78716c;margin-bottom:0.75rem;padding-bottom:0.6rem;border-bottom:1px solid #e7e5e4}
+.card ul{list-style:none}
+.card li{font-size:0.88rem;padding:0.2rem 0;color:#44403c;display:flex;justify-content:space-between;gap:0.75rem}
+.card li .st{font-size:0.7rem;color:#a8a29e;white-space:nowrap}
+.card.active{border-color:#2563eb;box-shadow:0 0 0 1px #2563eb}
+
+/* === Service Table === */
+#service-filters{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.75rem}
+#service-filters input{
+  flex:1 1 200px;padding:0.4rem 0.6rem;font-size:0.85rem;
+  border:1px solid #d6d3d1;border-radius:4px;background:#fff;
+  font-family:inherit;color:#1c1917;outline:none
+}
+#service-filters input:focus{border-color:#2563eb}
+.filter-group{display:flex;gap:2px;flex-wrap:wrap}
+.filter-btn{
+  padding:0.35rem 0.65rem;font-size:0.8rem;cursor:pointer;
+  border:1px solid #d6d3d1;background:#fff;color:#44403c;
+  font-family:inherit;transition:background 0.1s,border-color 0.1s
+}
+.filter-btn:first-child{border-radius:4px 0 0 4px}
+.filter-btn:last-child{border-radius:0 4px 4px 0}
+.filter-btn:only-child{border-radius:4px}
+.filter-btn:hover{background:#f5f5f4}
+.filter-btn.active{background:#2563eb;border-color:#2563eb;color:#fff}
+
+.table-wrap{overflow-x:auto;background:#fff;border:1px solid #e7e5e4;border-radius:6px}
+.table-wrap table{width:100%;border-collapse:collapse;font-size:0.9rem}
+.table-wrap thead{background:#f5f5f4}
+.table-wrap th{text-align:left;padding:0.55rem 0.75rem;font-weight:600;color:#44403c;font-size:0.8rem;white-space:nowrap}
+.table-wrap td{padding:0.45rem 0.75rem;border-top:1px solid #f0efed;vertical-align:top}
+.table-wrap tbody tr{transition:background 0.1s}
+.table-wrap tbody tr:hover{background:#fafaf9}
+.table-wrap tbody tr.highlight{background:#eff6ff}
+.table-wrap tbody tr.hidden{display:none}
+.tag{display:inline-block;font-size:0.7rem;padding:0.1rem 0.45rem;border-radius:3px;font-weight:500}
+.tag-docker{background:#f0f9ff;color:#2563eb}
+.tag-swarm{background:#f0fdf4;color:#166534}
+.tag-system{background:#fefce8;color:#a16207}
+.tag-native{background:#f5f3ff;color:#6b21a8}
+
+/* === Network Reference === */
+.net-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.net-table-wrap{background:#fff;border:1px solid #e7e5e4;border-radius:6px;overflow-x:auto}
+.net-table-wrap table{width:100%;border-collapse:collapse;font-size:0.88rem}
+.net-table-wrap caption{padding:0.55rem 0.75rem;font-weight:600;font-size:0.88rem;text-align:left;background:#f5f5f4;border-bottom:1px solid #e7e5e4}
+.net-table-wrap td,.net-table-wrap th{padding:0.4rem 0.75rem;border-top:1px solid #f0efed;text-align:left;white-space:nowrap}
+.net-table-wrap th{font-weight:600;color:#44403c;font-size:0.75rem;background:#fafaf9}
+
+/* footer */
+footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid #e7e5e4;text-align:center;font-size:0.88rem;color:#a8a29e}
+
+@media(max-width:768px){
+  .server-grid{grid-template-columns:1fr}
+  .net-grid{grid-template-columns:1fr}
+  header h1{font-size:1.5rem}
+  .container{padding:0 1rem}
+  #service-filters{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<header>
+  <h1>Homelab Infrastructure</h1>
+  <p>Three-node Docker Swarm cluster &middot; Ubuntu 24.04</p>
+  <a class="gh-link" href="https://github.com/Milisource/homelab-iac">github.com/Milisource/homelab-iac</a>
+</header>
+
+<section class="section">
+  <h2>Network Topology</h2>
+  <div id="topology-wrap">
+    <svg viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet" id="topology-svg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 Z" fill="#a8a29e" />
+        </marker>
+      </defs>
+
+      <!-- edges -->
+      <g class="edges" fill="none" stroke="#d6d3d1" stroke-width="1.5" marker-end="url(#arrow)">
+        <line x1="500" y1="68" x2="500" y2="120" />
+        <line x1="500" y1="138" x2="500" y2="190" />
+        <line x1="500" y1="208" x2="500" y2="260" />
+        <line x1="500" y1="278" x2="500" y2="330" />
+        <line x1="500" y1="348" x2="500" y2="400" />
+        <line x1="390" y1="450" x2="280" y2="472" />
+        <line x1="500" y1="450" x2="490" y2="472" />
+        <line x1="610" y1="450" x2="700" y2="472" />
+      </g>
+
+      <!-- Internet -->
+      <g class="topology-node node-infra" data-node="internet" transform="translate(500,45)">
+        <rect x="-65" y="-23" width="130" height="46" rx="4" />
+        <rect class="accent" x="-63" y="-21" width="3" height="42" rx="1" />
+        <text class="title" y="-2">Internet</text>
+      </g>
+
+      <!-- Cloudflare -->
+      <g class="topology-node node-infra" data-node="cloudflare" transform="translate(500,115)">
+        <rect x="-65" y="-23" width="130" height="46" rx="4" />
+        <rect class="accent" x="-63" y="-21" width="3" height="42" rx="1" />
+        <text class="title" y="-2">Cloudflare</text>
+        <text class="subtitle" y="14">DDoS + DNS proxy</text>
+      </g>
+
+      <!-- Router -->
+      <g class="topology-node node-infra" data-node="router" transform="translate(500,185)">
+        <rect x="-65" y="-23" width="130" height="46" rx="4" />
+        <rect class="accent" x="-63" y="-21" width="3" height="42" rx="1" />
+        <text class="title" y="-2">Router</text>
+        <text class="subtitle" y="14">80/443 → VIP</text>
+      </g>
+
+      <!-- VIP -->
+      <g class="topology-node node-infra" data-node="vip" transform="translate(500,255)">
+        <rect x="-75" y="-23" width="150" height="46" rx="4" />
+        <rect class="accent" x="-73" y="-21" width="3" height="42" rx="1" />
+        <text class="title" y="-2">VIP 192.168.50.99</text>
+        <text class="subtitle" y="14">keepalived failover</text>
+      </g>
+
+      <!-- Traefik -->
+      <g class="topology-node node-service" data-node="traefik" transform="translate(500,325)">
+        <rect x="-65" y="-23" width="130" height="46" rx="4" />
+        <rect class="accent" x="-63" y="-21" width="3" height="42" rx="1" />
+        <text class="title" y="-2">Traefik</text>
+        <text class="subtitle" y="14">2 replicas</text>
+      </g>
+
+      <!-- CrowdSec -->
+      <g class="topology-node node-service" data-node="crowdsec" transform="translate(500,395)">
+        <rect x="-65" y="-23" width="130" height="46" rx="4" />
+        <rect class="accent" x="-63" y="-21" width="3" height="42" rx="1" />
+        <text class="title" y="-2">CrowdSec</text>
+        <text class="subtitle" y="14">WAF bouncer</text>
+      </g>
+
+      <!-- milis-wonderspace -->
+      <g class="topology-node" data-node="milis" transform="translate(250,470)">
+        <rect x="-80" y="-25" width="160" height="50" rx="4" />
+        <rect class="accent" x="-78" y="-23" width="3" height="46" rx="1" />
+        <text class="title" y="-3">milis-wonderspace</text>
+        <text class="subtitle" y="14">192.168.50.115</text>
+      </g>
+
+      <!-- milkymiracle -->
+      <g class="topology-node" data-node="milk" transform="translate(500,470)">
+        <rect x="-80" y="-25" width="160" height="50" rx="4" />
+        <rect class="accent" x="-78" y="-23" width="3" height="46" rx="1" />
+        <text class="title" y="-3">milkymiracle</text>
+        <text class="subtitle" y="14">192.168.50.122</text>
+      </g>
+
+      <!-- heavensfeel -->
+      <g class="topology-node" data-node="heaven" transform="translate(750,470)">
+        <rect x="-80" y="-25" width="160" height="50" rx="4" />
+        <rect class="accent" x="-78" y="-23" width="3" height="46" rx="1" />
+        <text class="title" y="-3">heavensfeel</text>
+        <text class="subtitle" y="14">192.168.50.129</text>
+      </g>
+    </svg>
+
+    <div id="topology-legend">
+      <span><span class="dot" style="background:#2563eb"></span> Server</span>
+      <span><span class="dot" style="background:#525252"></span> Infrastructure</span>
+      <span><span class="dot" style="background:#0d9488"></span> Service</span>
+      <span style="margin-left:auto">Click a server to cross-highlight</span>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <h2>Servers</h2>
+  <div class="server-grid" id="server-grid">
+    <div class="card" data-node="milis">
+      <h3>milis-wonderspace</h3>
+      <div class="ip">192.168.50.115</div>
+      <div class="role">Storage &amp; Downloads</div>
+      <div class="specs">Intel Kaby Lake (8C) &middot; 16GB RAM &middot; 29TB mergerFS pool</div>
+      <ul>
+        <li><span>mergerFS pool</span><span class="st">system</span></li>
+        <li><span>NFS server</span><span class="st">export</span></li>
+        <li><span>Download client</span><span class="st">docker</span></li>
+        <li><span>VPN gateway</span><span class="st">docker</span></li>
+        <li><span>*Arr suite</span><span class="st">docker</span></li>
+        <li><span>Navidrome</span><span class="st">docker</span></li>
+        <li><span>Komga</span><span class="st">docker</span></li>
+        <li><span>Vaultwarden</span><span class="st">docker</span></li>
+        <li><span>n8n</span><span class="st">docker</span></li>
+        <li><span>Borgmatic backups</span><span class="st">system</span></li>
+      </ul>
+    </div>
+    <div class="card" data-node="milk">
+      <h3>milkymiracle</h3>
+      <div class="ip">192.168.50.122</div>
+      <div class="role">Compute, Media, Proxy</div>
+      <div class="specs">6-core &middot; 16GB RAM &middot; UHD 630 GPU &middot; Swarm leader</div>
+      <ul>
+        <li><span>Traefik</span><span class="st">swarm</span></li>
+        <li><span>CrowdSec LAPI</span><span class="st">native</span></li>
+        <li><span>Jellyfin</span><span class="st">docker</span></li>
+        <li><span>Immich</span><span class="st">docker</span></li>
+        <li><span>Foundry VTT</span><span class="st">docker</span></li>
+        <li><span>Vocard suite</span><span class="st">docker</span></li>
+        <li><span>Job-ops automation</span><span class="st">docker</span></li>
+        <li><span>Portfolio</span><span class="st">docker</span></li>
+      </ul>
+    </div>
+    <div class="card" data-node="heaven">
+      <h3>heavensfeel</h3>
+      <div class="ip">192.168.50.129</div>
+      <div class="role">Monitoring, Automation</div>
+      <div class="specs">Intel N95 (4C) &middot; 16GB RAM &middot; 512GB NVMe &middot; Swarm quorum</div>
+      <ul>
+        <li><span>Traefik</span><span class="st">swarm</span></li>
+        <li><span>Grafana</span><span class="st">docker</span></li>
+        <li><span>Prometheus</span><span class="st">docker</span></li>
+        <li><span>Loki</span><span class="st">docker</span></li>
+        <li><span>Promtail (Swarm global)</span><span class="st">swarm</span></li>
+        <li><span>cAdvisor (Swarm global)</span><span class="st">swarm</span></li>
+        <li><span>Vaultwarden</span><span class="st">docker</span></li>
+        <li><span>n8n</span><span class="st">docker</span></li>
+        <li><span>Uptime Kuma</span><span class="st">docker</span></li>
+        <li><span>Change Detection</span><span class="st">docker</span></li>
+        <li><span>SearXNG</span><span class="st">docker</span></li>
+        <li><span>Homepage dashboard</span><span class="st">docker</span></li>
+        <li><span>Hermes</span><span class="st">system</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <h2>Services <span class="count" id="service-count"></span></h2>
+
+  <div id="service-filters">
+    <input type="text" id="filter-text" placeholder="Search services…" spellcheck="false">
+    <div class="filter-group" id="filter-node">
+      <button class="filter-btn active" data-value="">All nodes</button>
+      <button class="filter-btn" data-value="milis-wonderspace">milis-wonderspace</button>
+      <button class="filter-btn" data-value="milkymiracle">milkymiracle</button>
+      <button class="filter-btn" data-value="heavensfeel">heavensfeel</button>
+    </div>
+    <div class="filter-group" id="filter-type">
+      <button class="filter-btn active" data-value="">All types</button>
+      <button class="filter-btn" data-value="docker">docker</button>
+      <button class="filter-btn" data-value="swarm">swarm</button>
+      <button class="filter-btn" data-value="system">system</button>
+      <button class="filter-btn" data-value="native">native</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Service</th><th>Node</th><th>Type</th><th>Purpose</th></tr>
+      </thead>
+      <tbody id="service-table-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section">
+  <h2>Network Reference</h2>
+  <div class="net-grid">
+    <div class="net-table-wrap">
+      <table>
+        <caption>LAN Subnets</caption>
+        <thead><tr><th>Network</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>192.168.50.0/24</td><td>LAN</td></tr>
+          <tr><td>100.x.x.x/10</td><td>Tailscale</td></tr>
+          <tr><td>172.17.0.0/16</td><td>docker0 bridge</td></tr>
+          <tr><td>192.168.240.0/20</td><td>docker_gwbridge</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="net-table-wrap">
+      <table>
+        <caption>External Access</caption>
+        <thead><tr><th>Path</th><th>Target</th></tr></thead>
+        <tbody>
+          <tr><td>Internet → Cloudflare</td><td>DDoS + DNS proxy</td></tr>
+          <tr><td>Router 80/443</td><td>192.168.50.99 (VIP)</td></tr>
+          <tr><td>VIP:53</td><td>AdGuard Home</td></tr>
+          <tr><td>VIP holder</td><td>keepalived failover</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="net-table-wrap">
+      <table>
+        <caption>Docker Overlay Networks</caption>
+        <thead><tr><th>Network</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>traefik-public</td><td>Public services</td></tr>
+          <tr><td>media-net</td><td>Media stack</td></tr>
+          <tr><td>apps-net</td><td>Apps stack</td></tr>
+          <tr><td>vpn</td><td>Isolated/routed services</td></tr>
+          <tr><td>adguard_default</td><td>AdGuard</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="net-table-wrap">
+      <table>
+        <caption>DNS Chain</caption>
+        <thead><tr><th>Hop</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td>Client → VIP:53</td><td>AdGuard Home (DNS filter)</td></tr>
+          <tr><td>AdGuard → localhost:5335</td><td>Unbound (recursive)</td></tr>
+          <tr><td>Unbound → Cloudflare DoT</td><td>1.1.1.1 (encrypted)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+const NODE_IDS = { internet:'internet', cloudflare:'cloudflare', router:'router', vip:'vip',
+  traefik:'traefik', crowdsec:'crowdsec', milis:'milis', milk:'milk', heaven:'heaven' }
+
+const SERVICES = [
+  {name:'Traefik',               node:'milkymiracle',     type:'swarm',   desc:'Reverse proxy, TLS termination, 2 replicas'},
+  {name:'Traefik',               node:'heavensfeel',      type:'swarm',   desc:'Reverse proxy replica (Swarm manager)'},
+  {name:'CrowdSec LAPI',         node:'milkymiracle',     type:'native',  desc:'Centralized WAF decision server'},
+  {name:'Jellyfin',              node:'milkymiracle',     type:'docker',  desc:'Media streaming with hardware transcoding'},
+  {name:'Immich',                node:'milkymiracle',     type:'docker',  desc:'Photo management (PostgreSQL + ML)'},
+  {name:'Foundry VTT',           node:'milkymiracle',     type:'docker',  desc:'Self-hosted virtual tabletop'},
+  {name:'Vocard suite',          node:'milkymiracle',     type:'docker',  desc:'Discord music bot + dashboard'},
+  {name:'Job-ops',               node:'milkymiracle',     type:'docker',  desc:'Job application automation'},
+  {name:'Portfolio',             node:'milkymiracle',     type:'docker',  desc:'resufolio.io (SvelteKit, InfluxDB)'},
+  {name:'mergerFS',              node:'milis-wonderspace',type:'system',  desc:'JBOD pool of 5 drives → 29TB /mnt/network'},
+  {name:'NFS server',            node:'milis-wonderspace',type:'system',  desc:'Shares /mnt/network and /DATA to LAN'},
+  {name:'Download client',       node:'milis-wonderspace',type:'docker',  desc:'Automated downloads with isolated network'},
+  {name:'VPN gateway',           node:'milis-wonderspace',type:'docker',  desc:'Routes traffic for isolated services'},
+  {name:'*Arr suite',            node:'milis-wonderspace',type:'docker',  desc:'Radarr, Sonarr, Lidarr, Prowlarr, Bazarr'},
+  {name:'Navidrome',             node:'milis-wonderspace',type:'docker',  desc:'Music streaming'},
+  {name:'Komga',                 node:'milis-wonderspace',type:'docker',  desc:'Comic/manga/e-book reader'},
+  {name:'Vaultwarden',           node:'milis-wonderspace',type:'docker',  desc:'Password manager'},
+  {name:'n8n',                   node:'milis-wonderspace',type:'docker',  desc:'Workflow automation'},
+  {name:'Borgmatic',             node:'milis-wonderspace',type:'system',  desc:'Daily encrypted backups'},
+  {name:'Grafana',               node:'heavensfeel',      type:'docker',  desc:'Metrics dashboards'},
+  {name:'Prometheus',            node:'heavensfeel',      type:'docker',  desc:'Metrics collection (node, docker, cAdvisor)'},
+  {name:'Loki',                  node:'heavensfeel',      type:'docker',  desc:'Log aggregation'},
+  {name:'Promtail',              node:'heavensfeel',      type:'swarm',   desc:'Swarm-global log shipping'},
+  {name:'cAdvisor',              node:'heavensfeel',      type:'swarm',   desc:'Swarm-global container metrics'},
+  {name:'Vaultwarden',           node:'heavensfeel',      type:'docker',  desc:'Password manager'},
+  {name:'n8n',                   node:'heavensfeel',      type:'docker',  desc:'Workflow automation'},
+  {name:'Uptime Kuma',           node:'heavensfeel',      type:'docker',  desc:'Uptime monitoring'},
+  {name:'Change Detection',      node:'heavensfeel',      type:'docker',  desc:'Website change monitoring'},
+  {name:'SearXNG',               node:'heavensfeel',      type:'docker',  desc:'Private search engine'},
+  {name:'Homepage',              node:'heavensfeel',      type:'docker',  desc:'Service dashboard'},
+  {name:'Hermes',                node:'heavensfeel',      type:'system',  desc:'AI agent gateway + dashboard'},
+]
+
+const nodeToShort = { 'milkymiracle':'milk', 'milis-wonderspace':'milis', 'heavensfeel':'heaven' }
+const shortToNode = { 'milk':'milkymiracle', 'milis':'milis-wonderspace', 'heaven':'heavensfeel' }
+
+// === SVG Node selection ===
+let selectedNode = null
+
+document.querySelectorAll('.topology-node').forEach(el => {
+  el.addEventListener('click', () => {
+    const id = el.dataset.node
+    if (!['milis', 'milk', 'heaven'].includes(id)) return
+    selectedNode = selectedNode === id ? null : id
+    updateHighlights()
+  })
+})
+
+function updateHighlights() {
+  // SVG nodes
+  document.querySelectorAll('.topology-node').forEach(el => {
+    el.classList.toggle('active', el.dataset.node === selectedNode)
+  })
+  // Cards
+  document.querySelectorAll('.card').forEach(c => {
+    c.classList.toggle('active', c.dataset.node === selectedNode)
+  })
+  // Table rows
+  document.querySelectorAll('#service-table-body tr').forEach(r => {
+    r.classList.toggle('highlight', r.dataset.node === selectedNode)
+  })
+}
+
+// === Service table ===
+const tags = { docker:'tag-docker', swarm:'tag-swarm', system:'tag-system', native:'tag-native' }
+
+function renderServices() {
+  const tbody = document.getElementById('service-table-body')
+  SERVICES.forEach(s => {
+    const tr = document.createElement('tr')
+    tr.dataset.node = nodeToShort[s.node] || 'heaven'
+    tr.innerHTML = `
+      <td>${s.name}</td>
+      <td>${s.node}</td>
+      <td><span class="tag ${tags[s.type] || ''}">${s.type}</span></td>
+      <td>${s.desc}</td>`
+    tbody.appendChild(tr)
+  })
+  document.getElementById('service-count').textContent = SERVICES.length
+}
+
+// === Filtering ===
+let filterText = ''
+let filterNode = ''
+let filterType = ''
+
+function applyFilters() {
+  const rows = document.querySelectorAll('#service-table-body tr')
+  let visible = 0
+  rows.forEach(r => {
+    const name = r.cells[0].textContent.toLowerCase()
+    const node = r.cells[1].textContent
+    const type = r.cells[2].textContent.trim()
+    const match = (!filterText || name.includes(filterText.toLowerCase()))
+      && (!filterNode || node === filterNode)
+      && (!filterType || type === filterType)
+    r.classList.toggle('hidden', !match)
+    if (match) visible++
+  })
+  // remove all row highlights when filtering
+  if (filterText || filterNode || filterType) {
+    document.querySelectorAll('#service-table-body tr.highlight').forEach(r => r.classList.remove('highlight'))
+  }
+}
+
+document.getElementById('filter-text').addEventListener('input', e => {
+  filterText = e.target.value
+  applyFilters()
+})
+
+document.querySelectorAll('#filter-node .filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#filter-node .filter-btn').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    filterNode = btn.dataset.value
+    applyFilters()
+  })
+})
+
+document.querySelectorAll('#filter-type .filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#filter-type .filter-btn').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    filterType = btn.dataset.value
+    applyFilters()
+  })
+})
+
+renderServices()
+</script>
+</body>
+</html>
