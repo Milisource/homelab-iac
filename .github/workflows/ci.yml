@@ -108,19 +108,11 @@ jobs:
               --ignore-unfixed \
               --no-progress \
               --format json "$img" > "/tmp/scan.json" || true
-            read -r crit high < <(python3 -c "
-            import json
-            try:
-                d = json.load(open('/tmp/scan.json'))
-                crit = high = 0
-                for r in d.get('Results', []):
-                    for v in r.get('Vulnerabilities', []):
-                        if v['Severity'] == 'CRITICAL': crit += 1
-                        elif v['Severity'] == 'HIGH': high += 1
-                print(crit, high)
-            except Exception:
-                print(0, 0)
-            ")
+            # grep-count severities from trivy's JSON (no python -c
+            # indentation pitfalls inside YAML block scalars). With
+            # --severity HIGH,CRITICAL trivy emits only those severities.
+            crit=$(grep -o '"Severity": "CRITICAL"' /tmp/scan.json | wc -l)
+            high=$(grep -o '"Severity": "HIGH"' /tmp/scan.json | wc -l)
             echo "  CRITICAL=$crit HIGH=$high"
             summary+=$'\n'"| ${img} | ${crit} | ${high} |"
             if [ "${crit:-0}" -gt 0 ]; then rc=1; fi
