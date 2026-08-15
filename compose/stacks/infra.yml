@@ -1,6 +1,12 @@
-# infra.yml — Swarm infrastructure stack (CrowdSec Traefik bouncer)
+# infra.yml — Swarm infrastructure stack (historical reference only)
 # Deploy: docker stack deploy -c compose/stacks/infra.yml infra
 # Node: milkymiracle (Traefik + CrowdSec bouncer)
+#
+# NOTE (2026-08-01): The crowdsec-bouncer Docker service is RETIRED. CrowdSec
+# now runs natively on all 3 nodes (crowdsec.service +
+# crowdsec-firewall-bouncer.service, nftables). This file is kept for
+# historical reference only and is NOT deployed — excluded from CI image
+# scans for the same reason.
 
 version: "3.9"
 

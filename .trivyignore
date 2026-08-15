@@ -11,14 +11,18 @@
 # this entry once `docker run --rm copyparty/ac:latest python3 -V`
 # reports >= 3.14.7 (check the CI scan log for the fixed version).
 CVE-2026-7210
-# CVE-2026-45447 + 24 Go stdlib/x-* CVEs — crazymax/diun:latest
+# CVE-2026-45447 + 24 Go stdlib/x-* CVEs — Go 1.26.3-built images:
+#   crazymax/diun:latest (v4.33.0, 2026-05-30)
+#   deluan/navidrome:latest (v0.63.2, 2026-07-11)
 # (openssl PKCS7 UAF, golang.org/x/crypto|net|text, Go stdlib 1.26.3).
-# All have upstream fixes (Go >= 1.26.4, openssl >= 3.5.7-r0) but diun
-# v4.33.0 (2026-05-30) was built with Go 1.26.3 — no newer tag exists.
-# Triaged 2026-08-15: diun is a notifier — outbound-only to registries +
-# Telegram, no user data, no inbound exposure; DoS/UAF findings are
-# low actual risk. Diun itself will notify us the moment upstream
-# rebuilds (watch for diun tag bumps, then remove this block).
+# All have upstream fixes (Go >= 1.26.4, openssl >= 3.5.7-r0) but both
+# images were built before the patched toolchain shipped — no newer
+# release exists.
+# Triaged 2026-08-15: diun is a notifier (outbound-only to registries +
+# Telegram, no user data); navidrome is LAN-only (navi.milisource.org
+# behind Traefik/CrowdSec). DoS/UAF findings are low actual risk. Diun
+# itself will notify us the moment upstream rebuilds (watch for diun /
+# navidrome tag bumps, then remove this block).
 CVE-2026-25681
 CVE-2026-27136
 CVE-2026-27145

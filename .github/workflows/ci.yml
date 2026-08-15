@@ -72,9 +72,12 @@ jobs:
             # Local builds don't exist on the runner (no registry image):
             #   camofox-browser:local (camofox), qbittorrent-ee:latest
             #   (download client), 5etools:local (5etools, when present).
+            # fbonalair/traefik-crowdsec-bouncer: retired 2026-08-01
+            # (CrowdSec runs natively via crowdsec-firewall-bouncer now);
+            # compose/stacks/infra.yml is kept as a historical reference.
             case "$img" in
-              camofox-browser:local|qbittorrent-ee:latest|5etools:local)
-                echo "SKIP $img (local build — no registry image)" && continue ;;
+              camofox-browser:local|qbittorrent-ee:latest|5etools:local|fbonalair/traefik-crowdsec-bouncer:latest)
+                echo "SKIP $img (local build or retired service — see comment above)" && continue ;;
             esac
             echo "==> $img"
             # Mount .trivyignore into the trivy container — the container
