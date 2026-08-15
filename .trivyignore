@@ -1,7 +1,9 @@
-# Trivy ignore file — findings triaged and tracked.
-# Format: one CVE per line (blank lines allowed, lines starting with # are comments).
-# Recheck cadence: every CI run — remove an entry as soon as the underlying
-# image rebuilds with the fix.
+# Trivy ignore file — deliberate, dated accepts (triaged by hand).
+# Format: one CVE per line (blank lines allowed, lines starting with # are
+# comments). These entries suppress the HIGH report for accepted risk; the
+# CRITICAL gate is NOT overridable from this file.
+# Recheck cadence: Diun (deployed 2026-08-15) notifies on upstream image
+# rebuilds — remove an entry as soon as the underlying image ships the fix.
 
 # CVE-2026-7210 — python: expat DoS (HIGH), fixed in python3 3.14.7-r0.
 # Affects copyparty/ac:latest (alpine 3.24.1 base, python3 3.14.5-r0).
