@@ -77,7 +77,13 @@ jobs:
                 echo "SKIP $img (local build — no registry image)" && continue ;;
             esac
             echo "==> $img"
-            docker run --rm aquasec/trivy:latest image \
+            # Mount .trivyignore into the trivy container — the container
+            # has no access to the repo checkout otherwise (cwd is not
+            # GITHUB_WORKSPACE). Ignored CVEs are triaged in .trivyignore.
+            docker run --rm \
+              -v "$PWD/.trivyignore:/.trivyignore:ro" \
+              aquasec/trivy:latest image \
+              --ignorefile /.trivyignore \
               --exit-code 1 \
               --severity HIGH,CRITICAL \
               --ignore-unfixed \
