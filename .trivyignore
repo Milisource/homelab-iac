@@ -48,3 +48,13 @@ CVE-2026-56859
 CVE-2026-56860
 CVE-2026-56862
 GHSA-hrxh-6v49-42gf
+# CVE-2026-32316 (jq), CVE-2026-69192 (ip-address npm), CVE-2026-13697
+# (undici npm) — felddy/foundryvtt:latest.
+# Upstream fixes exist but the image tracks Foundry releases — no newer
+# build ships them yet. Triaged 2026-08-15: foundry.milisource.org is
+# auth'd + rate-limited behind Traefik; undici/ip-address are Node deps
+# not reachable pre-auth, jq is a utility binary. Diun will notify when
+# felddy rebuilds; remove this block then.
+CVE-2026-32316
+CVE-2026-69192
+CVE-2026-13697
