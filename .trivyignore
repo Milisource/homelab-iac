@@ -60,3 +60,32 @@ GHSA-hrxh-6v49-42gf
 CVE-2026-32316
 CVE-2026-69192
 CVE-2026-13697
+# 2026-08-15 batch — CRITICALs triaged as upstream rebuild-lag (17 unique).
+# Every entry has an upstream FixedVersion, but the :latest images are
+# ALREADY the current release (komga 1.26.3, uptime-kuma 2.5.0, seerr
+# current, changedetection current, job-ops current, homepage current,
+# prarr:lidarr-plugins niche). Upstream has not rebuilt with the patched
+# deps — nothing pin-able or pull-able fixes these today.
+# Exposure: all affected services are auth'd behind Traefik/CrowdSec.
+# The CRITICAL gate stays meaningful: NEW criticals (e.g. freshrss PHP
+# RCE on 2026-08-15) are NOT here and fail the build. Diun notifies on
+# every upstream rebuild; remove entries as images ship fixes.
+# Cross-cutting: CVE-2026-59873 (node-tar) hits job-ops/homepage/seerr/
+# uptime-kuma; CVE-2025-68121 (Go tls) hits job-ops/komga/uptime-kuma.
+CVE-2026-59873
+CVE-2025-68121
+CVE-2026-42208
+CVE-2026-49468
+CVE-2026-31789
+CVE-2025-48072
+CVE-2026-42216
+CVE-2026-42217
+CVE-2025-55315
+CVE-2026-33937
+CVE-2023-24538
+CVE-2023-24540
+CVE-2024-24790
+CVE-2026-25896
+CVE-2026-45618
+CVE-2026-41242
+CVE-2026-33186
