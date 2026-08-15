@@ -7,3 +7,14 @@ rules:
     check-keys: false
   comments:
     min-spaces-from-content: 1
+  # Repo convention: inline flow maps use one space inside braces,
+  # e.g. `tls: { certResolver: le }` in traefik/dynamic/*.yml.
+  braces:
+    max-spaces-inside: 1
+  # Task-level "WHY" comments are indented with their task, not its
+  # content (see ansible/playbooks/*.yml) — intentional convention.
+  comments-indentation: disable
+  # traefik/dynamic/standalone.yml aligns the services block by padding
+  # colons (e.g. `vaultwarden:    { loadBalancer: ... }`) — allow that.
+  colons:
+    max-spaces-after: 100

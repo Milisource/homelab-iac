@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (yamllint / ansible-lint / bash -n)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install linters
+        run: pip install yamllint ansible-lint
+      - name: Install ansible collections
+        run: |
+          if [ -d ansible ]; then
+            cd ansible && ansible-galaxy collection install -r requirements.yml
+          fi
+      - name: YAML lint
+        run: yamllint -c .yamllint .
+      - name: Ansible lint
+        run: |
+          if [ -d ansible ]; then
+            cd ansible && ansible-lint
+          else
+            echo "ansible/ not present — skipping"
+          fi
+      - name: Shell syntax check
+        run: |
+          for f in scripts/*.sh; do
+            bash -n "$f" || exit 1
+          done
+
+  compose-validate:
+    name: Validate compose files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate compose files
+        run: |
+          cp .env.example .env
+          for f in compose/nodes/*.yml compose/stacks/*.yml compose/apps/*.yml; do
+            # compose/apps/searxng-settings.yml is a SearXNG settings file
+            # (settings.yml format), NOT a compose spec — `docker compose
+            # config` rejects it by design. It is covered by yamllint only.
+            [ "$f" = "compose/apps/searxng-settings.yml" ] && continue
+            # Note: `docker compose config` does not stat build contexts
+            # (camofox's /home/user/docker/build/camofox does not exist on
+            # the runner) — context presence is only checked at `build` time.
+            echo "==> $f"
+            docker compose -f "$f" config -q || exit 1
+          done
+
+  trivy:
+    name: Trivy image scan (HIGH/CRITICAL)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan compose images
+        run: |
+          images=$(grep -hoE 'image: [^ ]+' compose/nodes/*.yml compose/stacks/*.yml | awk '{print $2}' | sed 's/"//g' | sort -u)
+          for img in $images; do
+            # Local builds don't exist on the runner (no registry image):
+            #   camofox-browser:local (camofox), qbittorrent-ee:latest
+            #   (download client), 5etools:local (5etools, when present).
+            case "$img" in
+              camofox-browser:local|qbittorrent-ee:latest|5etools:local)
+                echo "SKIP $img (local build — no registry image)" && continue ;;
+            esac
+            echo "==> $img"
+            docker run --rm aquasec/trivy:latest image \
+              --exit-code 1 \
+              --severity HIGH,CRITICAL \
+              --ignore-unfixed \
+              --no-progress "$img" || exit 1
+          done

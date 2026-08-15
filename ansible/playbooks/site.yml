@@ -1,0 +1,13 @@
+---
+# site.yml — the single entrypoint for node state (audit + apply)
+# ---------------------------------------------------------------------------
+#   audit : ansible-playbook playbooks/site.yml --check   (dry run, safe)
+#   apply : ansible-playbook playbooks/site.yml           (idempotent)
+#
+# site.yml intentionally does NOT import deploy.yml: audit runs must never
+# touch containers. deploy.yml is a separate, explicit action (see README —
+# keeping audit vs. deploy apart is a feature, not an accident).
+# ---------------------------------------------------------------------------
+
+- name: "Common node configuration"
+  import_playbook: common.yml

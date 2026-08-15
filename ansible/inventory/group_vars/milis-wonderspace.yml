@@ -1,0 +1,36 @@
+---
+# milis-wonderspace.yml — per-host vars: storage & downloads node
+# 192.168.50.115 | SSH alias `server` | Dell Inspiron 3668, ~30TB storage
+# Full node documentation: servers/milis-wonderspace.md
+
+node_role: "storage & downloads node"
+node_description: >-
+  Primary storage server (mergerFS pool /mnt/network, /DATA). Runs the
+  *Arr suite, qBittorrent behind gluetun (PIA), Navidrome/Komga/slskd,
+  Ollama + Open WebUI, borgmatic. Also NFS server, Samba, unbound DNS,
+  keepalived (VIP .99, priority 50 — last resort).
+
+# Short service inventory — for docs/debugging only, NOT enforced by
+# Ansible v1. Enumerated from servers/milis-wonderspace.md.
+node_services:
+  - gluetun (PIA OpenVPN) + qBittorrent (forwarded port synced by systemd timer)
+  - sonarr / radarr / lidarr / prowlarr / bazarr / cleanuparr
+  - Navidrome, Komga, slskd, copyparty
+  - ollama + open-webui (chat.example.com)
+  - borgmatic (nightly backups of /DATA)
+  - native systemd: nfs-kernel-server, samba, unbound, keepalived, crowdsec, smartd
+
+# Files deploy.yml syncs onto this node (compose_file comes from inventory).
+managed_files:
+  - "{{ compose_dir }}/{{ compose_file }}"
+  - "{{ traefik_dynamic_dir }}/standalone.yml"
+  - "{{ traefik_dynamic_dir }}/dynamic.yml"
+
+# Explicitly NOT managed in v1:
+#   - NFS exports (/etc/exports) — live-tuned around the dying USB
+#     enclosure; templatizing now would drift from the post-migration
+#     reality (see Moving Off USB.md). Revisit after the SATA migration.
+#   - keepalived (priority 50), unbound, samba, systemd timers
+#     (sync-qbit-port, cleanup-stale-mounts, bump-recent-media-mtime,
+#     smart-health-check), cron (deadman-ping, lrc-sync) — all
+#     hand-deployed and stable.

@@ -1,0 +1,33 @@
+---
+# heavensfeel.yml — per-host vars: swarm quorum + always-on daemons
+# 192.168.50.129 | SSH alias `hserver` | Intel N95, 512GB SSD
+# Full node documentation: servers/heavensfeel.md
+
+node_role: "swarm manager (quorum) + always-on daemons + monitoring hub"
+node_description: >-
+  Always-on daemons (n8n, Vaultwarden, SearXNG, ASF, free-games-claimer,
+  Hermes) plus the monitoring stack (Prometheus/Grafana/Loki/Uptime Kuma).
+  Third swarm manager providing quorum; traefik=true label places a
+  Traefik replica here.
+
+# Short service inventory — for docs/debugging only, NOT enforced by
+# Ansible v1. Enumerated from servers/heavensfeel.md.
+node_services:
+  - hermes (native systemd USER service, :9119) + camofox (stealth browser)
+  - n8n, vaultwarden, archisteamfarm, free-games-claimer
+  - searxng + searxng-redis (lives at /DATA/Apps/searxng/ — out of scope v1)
+  - jellyseerr, homepage, qui, byparr, termix, 5etools, changedetection
+  - uptime-kuma, prometheus, grafana, loki (monitoring hub)
+
+# Files deploy.yml syncs onto this node (compose_file comes from inventory).
+managed_files:
+  - "{{ compose_dir }}/{{ compose_file }}"
+  - "{{ traefik_dynamic_dir }}/standalone.yml"
+  - "{{ traefik_dynamic_dir }}/dynamic.yml"
+
+# Explicitly NOT managed in v1:
+#   - Hermes' systemd user service + its watchdog — the agent manages
+#     itself; Ansible touching it would fight it (see Hermes incident
+#     hardening notes in servers/heavensfeel.md).
+#   - searxng project at /DATA/Apps/searxng/compose.yml (separate path).
+#   - NFS mounts in fstab (/mnt/network, /DATA from milis-wonderspace).

@@ -148,6 +148,7 @@ services:
     container_name: docker-proxy
     environment:
       CONTAINERS: 1
+      IMAGES: 1
       POST: 0
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -184,6 +185,125 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  # ═════════════════════════════════════════════════
+  # IMAGE UPDATES (diun) + RSS
+  # ═════════════════════════════════════════════════
+  # Diun supports only ONE docker endpoint per instance, so there is one
+  # instance per node — each watches its node's read-only docker-proxy
+  # (2376) and reports image updates via Telegram.
+
+  diun:
+    image: crazymax/diun:latest
+    container_name: diun
+    command: serve
+    environment:
+      TZ: "America/New_York"
+      DIUN_WATCH_WORKERS: "20"
+      DIUN_WATCH_SCHEDULE: "0 */6 * * *"
+      DIUN_WATCH_JITTER: "30s"
+      DIUN_PROVIDERS_DOCKER: "true"
+      DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT: "true"
+      DIUN_PROVIDERS_DOCKER_ENDPOINT: "tcp://192.168.50.129:2376"
+      DIUN_NOTIF_TELEGRAM_TOKEN: ${DIUN_TELEGRAM_TOKEN}
+      DIUN_NOTIF_TELEGRAM_CHATIDS: ${DIUN_TELEGRAM_CHATID}
+    volumes:
+      - /DATA/Apps/diun/data:/data
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "diun", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  diun-milkymiracle:
+    image: crazymax/diun:latest
+    container_name: diun-milkymiracle
+    command: serve
+    environment:
+      TZ: "America/New_York"
+      DIUN_WATCH_WORKERS: "20"
+      DIUN_WATCH_SCHEDULE: "0 */6 * * *"
+      DIUN_WATCH_JITTER: "30s"
+      DIUN_PROVIDERS_DOCKER: "true"
+      DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT: "true"
+      DIUN_PROVIDERS_DOCKER_ENDPOINT: "tcp://192.168.50.122:2376"
+      DIUN_NOTIF_TELEGRAM_TOKEN: ${DIUN_TELEGRAM_TOKEN}
+      DIUN_NOTIF_TELEGRAM_CHATIDS: ${DIUN_TELEGRAM_CHATID}
+    volumes:
+      - /DATA/Apps/diun/data-milkymiracle:/data
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "diun", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  diun-wonderspace:
+    image: crazymax/diun:latest
+    container_name: diun-wonderspace
+    command: serve
+    environment:
+      TZ: "America/New_York"
+      DIUN_WATCH_WORKERS: "20"
+      DIUN_WATCH_SCHEDULE: "0 */6 * * *"
+      DIUN_WATCH_JITTER: "30s"
+      DIUN_PROVIDERS_DOCKER: "true"
+      DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT: "true"
+      DIUN_PROVIDERS_DOCKER_ENDPOINT: "tcp://192.168.50.115:2376"
+      DIUN_NOTIF_TELEGRAM_TOKEN: ${DIUN_TELEGRAM_TOKEN}
+      DIUN_NOTIF_TELEGRAM_CHATIDS: ${DIUN_TELEGRAM_CHATID}
+    volumes:
+      - /DATA/Apps/diun/data-wonderspace:/data
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "diun", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  freshrss:
+    image: freshrss/freshrss:latest
+    container_name: freshrss
+    environment:
+      TZ: "America/New_York"
+      CRON_MIN: "5,35"
+      TRUSTED_PROXY: "172.16.0.0/12 192.168.0.0/16"
+      FRESHRSS_INSTALL: |
+        --api-enabled
+        --base-url https://rss.example.com
+        --db-type sqlite
+        --default-user admin
+        --language en
+      FRESHRSS_USER: |
+        --api-password ${FRESHRSS_ADMIN_PASSWORD}
+        --language en
+        --password ${FRESHRSS_ADMIN_PASSWORD}
+        --user admin
+    volumes:
+      - /DATA/Apps/freshrss/data:/var/www/FreshRSS/data
+      - /DATA/Apps/freshrss/extensions:/var/www/FreshRSS/extensions
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+    healthcheck:
+      test: ["CMD", "cli/health.php"]
+      interval: 75s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   # ═════════════════════════════════════════════════
   # MONITORING STACK

@@ -2,7 +2,7 @@
 # standalone.yml — Traefik dynamic router config (file provider)
 # ──────────────────────────────────────────────────────────────────────────────
 # Rate limiting is applied PER-ROUTER, not at the entrypoint level, so SPA
-# static assets (JS chunks, CSS, fonts) are not rate-limited. This was an issue 
+# static assets (JS chunks, CSS, fonts) are not rate-limited. This was an issue
 # in a previous iteration and caused massive problems. So, now, only API paths
 # or full hosts (for non-SPA services) carry the rate-limit middleware.
 #
@@ -51,6 +51,13 @@ http:
       entryPoints: [websecure]
       rule: "Host(`asf.example.com`)"
       service: archisteamfarm
+      tls: { certResolver: le }
+
+    freshrss:
+      entryPoints: [websecure]
+      rule: "Host(`rss.example.com`)"
+      service: freshrss
+      middlewares: [rate-limit]
       tls: { certResolver: le }
 
     # ── milis-wonderspace (media stack) ──────────────────────────────────────────
@@ -239,6 +246,7 @@ http:
     qbt:            { loadBalancer: { servers: [{ url: "http://192.168.50.115:8090" }] } }
     slskd:          { loadBalancer: { servers: [{ url: "http://slskd:5030" }] } }
     immich:         { loadBalancer: { servers: [{ url: "http://immich_server:2283" }] } }
+    freshrss:       { loadBalancer: { servers: [{ url: "http://freshrss:80" }] } }
 
     # ── Cockpit (native per-node, HTTPS backend) ────────────────────────────
     cockpit-server:

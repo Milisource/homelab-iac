@@ -2,6 +2,9 @@
 
 ## Status: Phase 2 Complete ✅
 
+> **2026-08-15** — Phase 3 additions: `.github/workflows/ci.yml` (lint /
+> compose-validate / trivy), diun + FreshRSS mirrored, `ansible/` layer added.
+
 All scaffolding is built. The repo contains sanitized compose files, Traefik configs,
 monitoring dashboards, scripts, and architecture docs ready for publication.
 
@@ -171,7 +174,7 @@ Client → VIP:53 → AdGuard Home → Unbound → Cloudflare DoT
 
 **Other:**
 - ASCII diagrams → Mermaid flowcharts in README
-- CI workflows: `.github/workflows/lint.yml`, `.github/workflows/validate-compose.yml`
+- ~~CI workflows: `.github/workflows/lint.yml`, `.github/workflows/validate-compose.yml`~~ — shipped as `.github/workflows/ci.yml` (lint / compose-validate / trivy, 2026-08-15)
 - MIT License
 - `.yamllint` config
-- `.env.example` updated with new variables (`ACME_EMAIL`, `KEEPALIVED_AUTH_PASS`)
+- `.env.example` updated with new variables (`ACME_EMAIL`, `KEEPALIVED_AUTH_PASS`, `DIUN_TELEGRAM_TOKEN`, `DIUN_TELEGRAM_CHATID`, `FRESHRSS_ADMIN_PASSWORD`)

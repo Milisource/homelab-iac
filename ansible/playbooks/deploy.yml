@@ -1,0 +1,94 @@
+---
+# deploy.yml — GitOps sync + deploy (runs explicitly, never via site.yml)
+# ---------------------------------------------------------------------------
+#   preview : ansible-playbook playbooks/deploy.yml --check
+#   deploy  : ansible-playbook playbooks/deploy.yml
+#
+# Maps the repo onto the nodes (public repo layout):
+#   compose/nodes/<node>.yml           -> {{ compose_dir }}/<node>.yml  (per host)
+#   traefik/dynamic/{standalone,dynamic}.yml -> {{ traefik_dynamic_dir }}/ (all hosts)
+#   then: docker compose -f <node>.yml up -d                          (per host)
+#
+# This is the "deploy" half of the GitOps story: CI lints + syntax-checks
+# this repo, deploy.yml is the only path from repo -> live containers.
+# ---------------------------------------------------------------------------
+
+- name: "Sync compose + traefik configs, deploy containers"
+  hosts: all
+  become: false  # everything below lives under user-owned paths
+
+  tasks:
+    # ── 1) Per-node compose file ──────────────────────────────────────────
+    - name: "Sync compose file from repo: {{ compose_file }}"
+      ansible.builtin.copy:
+        src: "{{ repo_compose_root }}/{{ compose_file }}"
+        dest: "{{ compose_dir }}/{{ compose_file }}"
+        mode: "0644"
+        backup: true
+      register: compose_copy
+      # backup: true keeps a <file>.<timestamp>.bak on change — cheap
+      # rollback if a bad file goes out. Idempotent: no diff, no change.
+      # (src paths resolve relative to this playbook's directory.)
+
+    # ── 2) Traefik dynamic configs (every node runs a Traefik replica) ────
+    - name: "Sync traefik dynamic configs"
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ traefik_dynamic_dir }}/{{ item.dest }}"
+        mode: "0644"
+        backup: true
+      loop:
+        - src: "{{ repo_traefik_dynamic_dir }}/standalone.yml"
+          dest: standalone.yml
+        - src: "{{ repo_traefik_dynamic_dir }}/dynamic.yml"
+          dest: dynamic.yml
+      register: traefik_copy
+      # standalone.yml's header mandates it on EVERY node running a
+      # Traefik replica — currently all 3 hosts (swarm global service).
+      # dynamic.yml holds the shared middlewares standalone.yml references.
+      # dashboard.yml is deliberately NOT synced: it embeds the basicAuth
+      # password hash for the traefik dashboard — treat it as a credential
+      # and sync it by hand.
+
+    # ── 3) Compose up -d ──────────────────────────────────────────────────
+    - name: "Deploy compose file (docker compose up -d): {{ compose_file }}"
+      ansible.builtin.command:
+        cmd: "docker compose -f {{ compose_file }} up -d"
+        chdir: "{{ compose_dir }}"
+      register: compose_up
+      changed_when:
+        - "'Started' in compose_up.stdout"
+        - "'Created' in compose_up.stdout"
+      # compose up -d is itself idempotent: untouched containers print
+      # "Running", changed ones "Started", new ones "Created". We map that
+      # onto changed_when so deploy runs are meaningful in CI logs.
+      # The .env file beside the compose file is auto-loaded by compose
+      # and never touched by Ansible.
+
+    # ── 4) Summary ────────────────────────────────────────────────────────
+    - name: "Deploy summary"
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}: compose {{ compose_file }}
+          {{ 'SYNCED (backup kept)' if compose_copy.changed else 'in sync' }},
+          traefik configs {{ 'SYNCED (backup kept)' if traefik_copy.changed else 'in sync' }},
+          {{ (compose_up.stdout | default('')) | regex_findall('(Started|Created)') | length }} container(s) started/created
+      when: not ansible_check_mode
+      # compose_up.stdout is safe here: this task only runs in real mode,
+      # where the compose task always executed.
+
+    - name: "Preview note (check mode)"
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: --check preview only — `docker compose up -d` is skipped in check mode."
+      when: ansible_check_mode
+
+# ---------------------------------------------------------------------------
+# NOT deployed here — swarm stacks and relocated projects (out of scope v1):
+#   compose/stacks/traefik-stack.yml -> `docker stack deploy` from
+#                                       milkymiracle /home/user/docker/Stacks/
+#   compose/stacks/infra.yml         -> retired 2026-08-01 (bouncer gone)
+#   compose/stacks/cockpit-stack.yml -> superseded 2026-08-01 (native cockpit)
+#   compose/apps/job-ops.yml         -> live copy at /home/user/job-ops/docker-compose.yml
+#   compose/apps/searxng.yml         -> live copy at /DATA/Apps/searxng/compose.yml
+# All five are hand-managed today; v2 candidate work.
+# ---------------------------------------------------------------------------

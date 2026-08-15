@@ -1,0 +1,53 @@
+---
+# all.yml — variables shared by every node in the swarm
+# ---------------------------------------------------------------------------
+# These are the "constants" of the homelab: timezone, the two sync target
+# directories, the docker network, and the exact list of compose files this
+# repo owns per node.
+# ---------------------------------------------------------------------------
+
+# System timezone; containers must match (TZ=America/New_York in compose).
+timezone: America/New_York
+
+# Where per-node compose files live on each node. The deploy command is
+# always: cd {{ compose_dir }} && docker compose -f <node>.yml up -d
+compose_dir: /home/user/docker/compose
+
+# Traefik file-provider config dir. /etc/traefik itself is root-owned, but
+# the dynamic/ SUBDIR is user-owned and writable without sudo — common.yml
+# only ever touches the subdir (see its task 4 note).
+traefik_dynamic_dir: /etc/traefik/dynamic
+
+# External overlay network every app container + Traefik replica connects
+# to (created by the swarm; cross-node Docker DNS). Not created/managed by
+# Ansible v1 — it already exists on all 3 nodes.
+docker_network: traefik-overlay
+
+# Per-node compose files this repo manages (one per node, named after the
+# node, verified against the repo compose/ dir and servers/*.md).
+# Deliberately NOT in this list, and why:
+#   - traefik-stack.yml   -> swarm stack, `docker stack deploy` from
+#                            milkymiracle /home/user/docker/Stacks/
+#   - infra.yml           -> swarm stack, RETIRED 2026-08-01
+#                            (crowdsec-bouncer container removed)
+#   - cockpit-stack.yml   -> swarm stack, SUPERSEDED 2026-08-01
+#                            (cockpit now runs natively per node)
+#   - job-ops.yml         -> live copy lives at /home/user/job-ops/
+#                            docker-compose.yml (different path)
+#   - searxng.yml         -> live copy lives at /DATA/Apps/searxng/
+#                            compose.yml on heavensfeel (different path)
+repo_compose_files:
+  - milis-wonderspace.yml
+  - milkymiracle.yml
+  - heavensfeel.yml
+
+# Repo paths on the CONTROL node, relative to the playbook files
+# (ansible/playbooks/): copy `src` resolves relative to the playbook's
+# directory, so the paths below work regardless of the cwd ansible-playbook
+# is invoked from.
+#
+# NOTE: these point at the PUBLIC repo layout (compose/nodes/, traefik/).
+# The internal repo keeps the flat layout (compose/<node>.yml,
+# infra/traefik/dynamic/) — adjust if you sync this file back.
+repo_compose_root: "../../compose/nodes"
+repo_traefik_dynamic_dir: "../../traefik/dynamic"

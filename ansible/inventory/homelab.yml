@@ -1,0 +1,78 @@
+---
+# homelab.yml — Ansible inventory for the 3-node Docker Swarm homelab
+# ---------------------------------------------------------------------------
+# Groups:
+#   swarm_managers : all 3 nodes (3-node quorum; milkymiracle is leader)
+#   storage        : milis-wonderspace  (disks, *Arr, downloads, NFS/Samba)
+#   media          : milkymiracle      (Jellyfin/Immich/FoundryVTT/Vocard)
+#   daemons        : heavensfeel       (n8n/Vaultwarden/SearXNG/monitoring)
+#
+# NOTE: hostnames + 192.168.50.x addresses are RFC1918 private — safe to
+# publish, matching repo policy of keeping LAN addresses in code.
+# ---------------------------------------------------------------------------
+
+all:
+  children:
+    # Every node is a swarm manager (the cluster survives any one loss).
+    swarm_managers:
+      hosts:
+        milis-wonderspace: {}
+        milkymiracle: {}
+        heavensfeel: {}
+
+    # Storage + downloads: qBittorrent behind gluetun, *Arr suite,
+    # Navidrome/Komga/slskd, Ollama + Open WebUI, NFS server, Samba,
+    # unbound, keepalived (VIP .99, priority 50), borgmatic.
+    storage:
+      hosts:
+        milis-wonderspace: {}
+
+    # Compute + media streaming: Jellyfin (GPU), Immich, FoundryVTT,
+    # Masqueradarr, Vocard. Swarm leader + keepalived VIP holder (.99,
+    # priority 150). Hosts the swarm stack files in /home/user/docker/Stacks/.
+    media:
+      hosts:
+        milkymiracle: {}
+
+    # Always-on daemons + monitoring hub: n8n, Vaultwarden, SearXNG,
+    # free-games-claimer, ASF, Hermes, Prometheus/Grafana/Loki/Uptime Kuma.
+    daemons:
+      hosts:
+        heavensfeel: {}
+
+  # Per-host connection vars. Hosts are defined once here; the `{}`
+  # memberships in the groups above reuse these definitions.
+  hosts:
+    milis-wonderspace:
+      # SSH alias: server
+      ansible_host: 192.168.50.115
+      ansible_user: user
+      # ControlPath under ~/.ssh (expanded by the ssh client); %r/%h/%p
+      # are OpenSSH tokens — same socket file as ad-hoc ssh multiplexing.
+      ansible_ssh_common_args: >-
+        -o ControlMaster=auto
+        -o ControlPath=~/.ssh/ctrl-%r@%h:%p
+        -o ControlPersist=10m
+      # Per-node compose file in the repo (compose/) and on the node
+      # ({{ compose_dir }}/) — deploy.yml syncs one-for-one.
+      compose_file: milis-wonderspace.yml
+
+    milkymiracle:
+      # SSH alias: eserver
+      ansible_host: 192.168.50.122
+      ansible_user: user
+      ansible_ssh_common_args: >-
+        -o ControlMaster=auto
+        -o ControlPath=~/.ssh/ctrl-%r@%h:%p
+        -o ControlPersist=10m
+      compose_file: milkymiracle.yml
+
+    heavensfeel:
+      # SSH alias: hserver
+      ansible_host: 192.168.50.129
+      ansible_user: user
+      ansible_ssh_common_args: >-
+        -o ControlMaster=auto
+        -o ControlPath=~/.ssh/ctrl-%r@%h:%p
+        -o ControlPersist=10m
+      compose_file: heavensfeel.yml

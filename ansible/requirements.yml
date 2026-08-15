@@ -1,0 +1,9 @@
+---
+# requirements.yml — collections required by these playbooks
+# Install on the control node with: ansible-galaxy collection install -r requirements.yml
+# (ansible-lint auto-installs missing collections listed here.)
+#
+# community.general provides `timezone` — removed from ansible-core in 2.14
+# (previously ansible.builtin.timezone).
+collections:
+  - name: community.general

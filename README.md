@@ -3,6 +3,7 @@
 Three-node Docker Swarm cluster running Ubuntu 24.04. Services deployed via `docker compose` (standalone) and `docker stack deploy` (swarm). All infrastructure is defined as code — secrets excluded.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/Milisource/homelab-iac/actions/workflows/ci.yml/badge.svg)](https://github.com/Milisource/homelab-iac/actions/workflows/ci.yml)
 
 ---
 
@@ -12,7 +13,7 @@ Three-node Docker Swarm cluster running Ubuntu 24.04. Services deployed via `doc
 |------|----|-------|------|-------------|
 | **milis-wonderspace** | 192.168.50.115 | i7-7700, 16GB, 29TB pool | Storage, Downloads | *Arr suite, Navidrome, Vaultwarden, Komga |
 | **milkymiracle** | 192.168.50.122 | i5-9500T, 16GB, UHD 630 | Compute, Media, Proxy | Jellyfin (HW transcode), Traefik, Foundry VTT, CrowdSec LAPI |
-| **heavensfeel** | 192.168.50.129 | N95, 16GB, 512GB SSD | Monitoring, Automation | Grafana, Prometheus, Loki, Vaultwarden, n8n, SearXNG |
+| **heavensfeel** | 192.168.50.129 | N95, 16GB, 512GB SSD | Monitoring, Automation | Grafana, Prometheus, Loki, Vaultwarden, n8n, SearXNG, Diun, FreshRSS |
 
 ---
 
@@ -91,6 +92,7 @@ homelab-iac/
 │   ├── nodes/                #   Per-node standalone compose files
 │   ├── stacks/               #   Swarm stack files (traefik, infra, cockpit)
 │   └── apps/                 #   App-specific compose files (searxng, job-ops)
+├── ansible/                  # Ansible layer (inventory, playbooks, group vars)
 ├── traefik/                  # Traefik reverse proxy config
 │   ├── traefik.yml           #   Static config (ACME, providers, entrypoints)
 │   └── dynamic/              #   Dynamic configs (routers, middlewares)
@@ -163,7 +165,7 @@ In an ideal world, we do use RAID, but this procedure requires us to wipe our ex
 |------|------|------|
 | **milis-wonderspace** | `docs/servers/milis-wonderspace.md` | Storage, Downloads, *Arr suite, Vaultwarden |
 | **milkymiracle** | `docs/servers/milkymiracle.md` | Traefik, Jellyfin, CrowdSec, Foundry VTT |
-| **heavensfeel** | `docs/servers/heavensfeel.md` | Grafana, Prometheus, Loki, SearXNG, n8n |
+| **heavensfeel** | `docs/servers/heavensfeel.md` | Grafana, Prometheus, Loki, SearXNG, n8n, Diun, FreshRSS |
 
 ### Per-node compose files over a single mega-file
 
@@ -222,6 +224,12 @@ Dashboards auto-provision from `monitoring/dashboards/`:
 | `homelab-scripts.polkit` | Polkit rules to run scripts without sudo | — | Installed to `/usr/share/polkit-1/rules.d/` |
 
 All admin scripts (`smart-*`, `cleanup-*`, `detect-*`) run as root via systemd oneshot services. The homelab user invokes them with `systemctl start <service>` — no sudo needed thanks to the polkit rules in `homelab-scripts.polkit`.
+
+---
+
+## Ansible
+
+The `ansible/` layer is the **apply half of the GitOps loop**: `site.yml` (via `common.yml`) maintains a conservative, idempotent v1 baseline — user, Docker engine + compose plugin, config directories, timezone — while `deploy.yml` syncs the per-node compose files and Traefik dynamic configs from this repo onto the nodes and runs `docker compose up -d`. Audit and deploy are deliberately separated: `site.yml --check` is a safe drift audit that never touches containers, and `deploy.yml` only runs explicitly. See `ansible/README.md` for the quickstart.
 
 ---
 

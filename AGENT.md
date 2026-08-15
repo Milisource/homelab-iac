@@ -9,6 +9,7 @@ Public Infrastructure-as-Code repo for a 3-node Docker Swarm homelab cluster.
 | `compose/nodes/` | Per-node compose files (milis-wonderspace, milkymiracle, heavensfeel) |
 | `compose/stacks/` | Swarm stack files (traefik, infra, cockpit) |
 | `compose/apps/` | Standalone apps (searxng, job-ops) |
+| `ansible/` | Ansible layer (inventory, group_vars, playbooks — audit + deploy) |
 | `traefik/dynamic/` | Traefik dynamic router/middleware configs |
 | `monitoring/dashboards/` | Grafana dashboard JSON definitions |
 | `scripts/` | Operational scripts (SMART health, stale mount recovery, etc.) |
@@ -33,7 +34,7 @@ Public Infrastructure-as-Code repo for a 3-node Docker Swarm homelab cluster.
 
 1. Extract live configs: traefik static config, prometheus.yml, keepalived.conf
 2. Add service docs from `Homelab/services/` in the Compendium
-3. Add CI (YAML lint + compose validation)
+3. ~~Add CI (YAML lint + compose validation)~~ — done (`.github/workflows/ci.yml`)
 4. Verify zero secrets in git history
 
 ## Source of Truth

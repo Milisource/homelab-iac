@@ -1,0 +1,35 @@
+---
+# milkymiracle.yml — per-host vars: compute & media streaming node
+# 192.168.50.122 | SSH alias `eserver` | swarm Leader + keepalived VIP
+# holder (.99, priority 150)
+# Full node documentation: servers/milkymiracle.md
+
+node_role: "compute & media streaming node"
+node_description: >-
+  Media streaming + compute: Jellyfin (GPU transcode), Immich,
+  FoundryVTT, Masqueradarr, Vocard. Swarm leader; also holds the swarm
+  stack files at /home/user/docker/Stacks/ (deployed via docker stack
+  deploy — out of scope v1).
+
+# Short service inventory — for docs/debugging only, NOT enforced by
+# Ansible v1. Enumerated from servers/milkymiracle.md.
+node_services:
+  - jellyfin (GPU transcoding via /dev/dri)
+  - immich (server + machine-learning + postgres + redis)
+  - foundryvtt
+  - masqueradarr + mongo-masq (IPTV aggregator)
+  - vocard (bot + dashboard + db + lavalink + spotify-tokener + yt-cipher)
+  - job-ops (jobs.example.com — lives at /home/user/job-ops/, out of scope v1)
+  - portainer + portainer-agent
+
+# Files deploy.yml syncs onto this node (compose_file comes from inventory).
+managed_files:
+  - "{{ compose_dir }}/{{ compose_file }}"
+  - "{{ traefik_dynamic_dir }}/standalone.yml"
+  - "{{ traefik_dynamic_dir }}/dynamic.yml"
+
+# Explicitly NOT managed in v1:
+#   - swarm stacks in /home/user/docker/Stacks/ (traefik, adguard,
+#     base-services, apps, networking, bots) — `docker stack deploy`
+#     from this node.
+#   - standalone projects at /home/user/job-ops/ and /home/user/vocard/.
