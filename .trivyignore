@@ -1,0 +1,13 @@
+# Trivy ignore file — findings triaged and tracked.
+# Format: one CVE per line (blank lines allowed, lines starting with # are comments).
+# Recheck cadence: every CI run — remove an entry as soon as the underlying
+# image rebuilds with the fix.
+
+# CVE-2026-7210 — python: expat DoS (HIGH), fixed in python3 3.14.7-r0.
+# Affects copyparty/ac:latest (alpine 3.24.1 base, python3 3.14.5-r0).
+# Triaged 2026-08-15: denial-of-service in an internet-exposed but
+# personal file share (cloud.milisource.org) — no RCE/unauth access
+# path. Upstream image must rebuild with python3 >= 3.14.7-r0; remove
+# this entry once `docker run --rm copyparty/ac:latest python3 -V`
+# reports >= 3.14.7 (check the CI scan log for the fixed version).
+CVE-2026-7210
