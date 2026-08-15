@@ -272,7 +272,7 @@ services:
       start_period: 30s
 
   freshrss:
-    image: freshrss/freshrss:latest
+    image: freshrss/freshrss:edge
     container_name: freshrss
     environment:
       TZ: "America/New_York"
