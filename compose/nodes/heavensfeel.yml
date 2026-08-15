@@ -271,6 +271,21 @@ services:
       retries: 3
       start_period: 30s
 
+  # ── borg-repo (borg repository host for backup-source-node backups) ──
+  # Off-site backup target: the source node's borgmatic SSHes here as
+  # user@host; a restricted forced command in authorized_keys runs
+  # `docker exec -i borg-repo borg serve --restrict-to-path /repos`, so
+  # borg runs inside this container and writes to /home/user/borg-repos
+  # (bind-mounted). Container stays idle (sleep infinity) — it exists to
+  # host the borg binary + mount.
+  borg-repo:
+    image: ghcr.io/borgmatic-collective/borgmatic:latest
+    container_name: borg-repo
+    command: ["sh", "-c", "sleep infinity"]
+    volumes:
+      - /home/user/borg-repos:/repos
+    restart: unless-stopped
+
   freshrss:
     image: freshrss/freshrss:edge
     container_name: freshrss

@@ -304,6 +304,7 @@ services:
     volumes:
       - /DATA/Apps/borgmatic:/etc/borgmatic
       - /DATA/Apps/borgmatic/repos:/repos
+      - /DATA/Apps/borgmatic/ssh:/root/.ssh:ro
       - /DATA:/source/DATA:ro
     cap_add:
       - SYS_ADMIN
