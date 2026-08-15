@@ -111,16 +111,16 @@ jobs:
             read -r crit high < <(python3 -c "
             import json
             try:
-            d = json.load(open('/tmp/scan.json'))
-            crit = high = 0
-            for r in d.get('Results', []):
-            for v in r.get('Vulnerabilities', []):
-            if v['Severity'] == 'CRITICAL': crit += 1
-            elif v['Severity'] == 'HIGH': high += 1
-            print(crit, high)
+                d = json.load(open('/tmp/scan.json'))
+                crit = high = 0
+                for r in d.get('Results', []):
+                    for v in r.get('Vulnerabilities', []):
+                        if v['Severity'] == 'CRITICAL': crit += 1
+                        elif v['Severity'] == 'HIGH': high += 1
+                print(crit, high)
             except Exception:
-            print(0, 0)
-")
+                print(0, 0)
+            ")
             echo "  CRITICAL=$crit HIGH=$high"
             summary+=$'\n'"| ${img} | ${crit} | ${high} |"
             if [ "${crit:-0}" -gt 0 ]; then rc=1; fi
