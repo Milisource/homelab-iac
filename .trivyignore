@@ -11,3 +11,36 @@
 # this entry once `docker run --rm copyparty/ac:latest python3 -V`
 # reports >= 3.14.7 (check the CI scan log for the fixed version).
 CVE-2026-7210
+# CVE-2026-45447 + 24 Go stdlib/x-* CVEs — crazymax/diun:latest
+# (openssl PKCS7 UAF, golang.org/x/crypto|net|text, Go stdlib 1.26.3).
+# All have upstream fixes (Go >= 1.26.4, openssl >= 3.5.7-r0) but diun
+# v4.33.0 (2026-05-30) was built with Go 1.26.3 — no newer tag exists.
+# Triaged 2026-08-15: diun is a notifier — outbound-only to registries +
+# Telegram, no user data, no inbound exposure; DoS/UAF findings are
+# low actual risk. Diun itself will notify us the moment upstream
+# rebuilds (watch for diun tag bumps, then remove this block).
+CVE-2026-25681
+CVE-2026-27136
+CVE-2026-27145
+CVE-2026-33818
+CVE-2026-39821
+CVE-2026-39822
+CVE-2026-39828
+CVE-2026-39829
+CVE-2026-39830
+CVE-2026-39831
+CVE-2026-39832
+CVE-2026-39835
+CVE-2026-42504
+CVE-2026-42508
+CVE-2026-45447
+CVE-2026-46595
+CVE-2026-46597
+CVE-2026-46600
+CVE-2026-56852
+CVE-2026-56853
+CVE-2026-56858
+CVE-2026-56859
+CVE-2026-56860
+CVE-2026-56862
+GHSA-hrxh-6v49-42gf
