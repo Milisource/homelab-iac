@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      - uses: squidfunk/mkdocs-material@v9.7.7
+      - uses: squidfunk/mkdocs-material@9.7.7
         with:
           publish: false
       - uses: actions/upload-pages-artifact@v3
