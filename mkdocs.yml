@@ -1,0 +1,72 @@
+site_name: Homelab Wiki
+site_description: Public knowledge base for a three-node Docker Swarm homelab cluster
+site_url: https://milisource.github.io/homelab-iac/
+repo_url: https://github.com/Milisource/homelab-iac
+edit_uri: blob/main/docs/
+
+theme:
+  name: material
+  language: en
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - toc.follow
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.highlight
+  - tables
+
+nav:
+  - Home: index.md
+  - Architecture:
+      - Overview: architecture/overview.md
+  - Network:
+      - Topology: network/topology.md
+  - Monitoring:
+      - Stack: monitoring/README.md
+  - Storage:
+      - Overview: storage/overview.md
+      - USB Migration: storage/usb-migration.md
+  - Servers:
+      - milkymiracle: servers/milkymiracle.md
+      - milis-wonderspace: servers/milis-wonderspace.md
+      - heavensfeel: servers/heavensfeel.md
+  - Services:
+      - AdGuard Home: services/adguard.md
+      - CrowdSec: services/crowdsec.md
+      - Keepalived: services/keepalived.md
+      - Traefik: services/traefik.md
+      - Vaultwarden: services/vaultwarden.md
+  - Flows:
+      - Media Pipeline: flows/media-pipeline.md

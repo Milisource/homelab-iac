@@ -5,6 +5,10 @@ Three-node Docker Swarm cluster running Ubuntu 24.04. Services deployed via `doc
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/Milisource/homelab-iac/actions/workflows/ci.yml/badge.svg)](https://github.com/Milisource/homelab-iac/actions/workflows/ci.yml)
 
+> 📖 **Knowledge base**: the `docs/` folder is published as a searchable wiki at
+> [milisource.github.io/homelab-iac](https://milisource.github.io/homelab-iac/) (MkDocs Material).
+> Browse it to learn how this cluster works, or use the search to find specific answers.
+
 ---
 
 ## Cluster Topology
@@ -147,7 +151,7 @@ The main downside here is that NFS is our single-point-of-failure, mitigated by 
 
 ### USB Enclosures VS Functional Design
 
-I'm going to be straight with you. This sucks. I'm currently using a [Yottamaster PS500RU3](https://www.amazon.com/dp/B0BP2CBR85?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1) after one of my ORICO Hard Drive enclosures died. It works, that's all it really has to do, but from a design principle this is unideal and if you're using me as a boilerplate to build from scratch, do **not** do this. My Homelab nodes have several drawbacks that prevent me from utilizing other methods, notably, native SATA/SAS, see my [USB Migration](/docs/storage/USB%20Migration.md) document.
+I'm going to be straight with you. This sucks. I'm currently using a [Yottamaster PS500RU3](https://www.amazon.com/dp/B0BP2CBR85?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1) after one of my ORICO Hard Drive enclosures died. It works, that's all it really has to do, but from a design principle this is unideal and if you're using me as a boilerplate to build from scratch, do **not** do this. My Homelab nodes have several drawbacks that prevent me from utilizing other methods, notably, native SATA/SAS, see my [USB Migration](docs/storage/usb-migration.md) document.
 
 The goal is to get it to work and for what I'm doing with it I don't really need super powerful or fast drives, it's fine, but it is one of my bigger regrets not planning ahead for.
 ### mergerFS over ZFS/btrfs/RAID
