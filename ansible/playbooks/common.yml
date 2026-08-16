@@ -7,18 +7,24 @@
 #
 # v1 design rules:
 #   - Every task is idempotent and --check friendly; nothing destructive.
-#   - No sudo unless unavoidable: everything below lives under paths owned
-#     by `user`, so become stays off. Only apt + timezone escalate, and
-#     both are no-ops when the node state is already correct.
+#   - NO sudo anywhere. The nodes' sudoers is two-layer: password-gated
+#     `%sudo` (human admin, TTY only — unreachable from non-TTY Ansible)
+#     + a NOPASSWD read-only whitelist (/etc/sudoers.d/hermes-agent, for
+#     the automation agent, watchdog-monitored). v1 owns only paths the
+#     user can write without elevation. The two v1-draft privileged tasks
+#     (apt install, timezone) were dropped after the first audit hit
+#     "Missing sudo password" on all 3 nodes — see README "Out of scope
+#     v1". Revisit in v2 behind a narrowly-scoped, watchdog-blessed
+#     NOPASSWD entry if needed.
 # ---------------------------------------------------------------------------
 
 - name: "Common node configuration — all 3 swarm nodes"
   hosts: all
   gather_facts: true
-  become: false  # default; only the apt and timezone tasks escalate
+  become: false  # NO sudo anywhere in v1 — every task runs as the user
 
   tasks:
-    # ── 1) User user ─────────────────────────────────────────────────────
+    # ── 1) User ─────────────────────────────────────────────────────────
     - name: "Ensure user 'user' exists with /bin/bash"
       ansible.builtin.user:
         name: user
@@ -29,89 +35,71 @@
           - docker
         append: true
       # WHY append: only ADD sudo+docker membership — never remove groups
-      # user already has (e.g. `video` on milkymiracle for /dev/dri).
+      # the user already has (e.g. `video` on the media node for /dev/dri).
       # WHY no password/key management: auth is intentionally untouched in
       # v1 — keys are hand-placed (~/.ssh/id_ed25519) and the sudoers
-      # whitelist is monitored by the Hermes watchdog (see README).
+      # whitelist is watchdog-monitored (see README).
       # Note: the `docker` group must exist for this to succeed — it does,
-      # Docker is preinstalled on all 3 nodes (task 2 below).
+      # Docker is preinstalled on all 3 nodes.
 
-    # ── 2) Docker engine + compose plugin ─────────────────────────────────
-    - name: "Ensure docker-ce + docker-compose-plugin are installed"
-      ansible.builtin.apt:
-        name:
-          - docker-ce
-          - docker-compose-plugin
-        state: present
-        update_cache: false
-      become: true
-      # WHY update_cache: false — apt sources and repo keys were set up by
-      # hand; v1 does NOT manage apt sources (drift risk, and all nodes are
-      # already on Docker 29.6.1). This task is a guarantee, not an
-      # installer: it no-ops while the packages are present.
-      # become: apt needs root; passwordless sudo is configured on nodes.
-
-    # ── 3) Compose dir ────────────────────────────────────────────────────
+    # ── 2) Compose dir ──────────────────────────────────────────────────
     - name: "Ensure per-node compose directory exists"
       ansible.builtin.file:
         path: "{{ compose_dir }}"
         state: directory
         mode: "0755"
-      # user owns /home/user/docker — no sudo needed.
+      # the user owns /home/user/docker — no sudo needed.
 
-    # ── 4) Traefik dynamic config dir ─────────────────────────────────────
+    # ── 3) Traefik dynamic config dir ───────────────────────────────────
     - name: "Ensure Traefik dynamic config directory exists"
       ansible.builtin.file:
         path: "{{ traefik_dynamic_dir }}"
         state: directory
         mode: "0755"
-      # /etc/traefik itself is root-owned; the dynamic/ SUBDIR is user-owned
-      # and writable without sudo. We deliberately run without become and
-      # only ensure the subdir — if it were ever missing, this fails loudly
-      # instead of silently creating a root-owned dir we can't maintain.
+      # /etc/traefik itself is root-owned; the dynamic/ SUBDIR is owned by
+      # the user and writable without sudo. We deliberately run without
+      # become and only ensure the subdir — if it were ever missing, this
+      # fails loudly instead of silently creating a root-owned dir we
+      # can't maintain.
 
-    # ── 5) Timezone ───────────────────────────────────────────────────────
-    - name: "Ensure timezone is {{ timezone }}"
-      community.general.timezone:
-        name: "{{ timezone }}"
-      become: true
-      # The one genuinely privileged write (timedatectl set-timezone).
-      # Idempotent: no-op when already correct, safe under --check.
-      # community.general.timezone: the `timezone` module was removed from
-      # ansible-core in 2.14 (was ansible.builtin.timezone) — see
-      # requirements.yml.
-
-    # ── 6) Explicitly NOT in v1 ───────────────────────────────────────────
+    # ── 4) Explicitly NOT in v1 ─────────────────────────────────────────
     - name: "Note what common.yml deliberately does not manage"
       ansible.builtin.debug:
         msg:
           - "common.yml v1 finished on {{ inventory_hostname }}."
           - "NOT managed in v1 (see comment block below + README):"
-          - "  - sudoers whitelist    (Hermes watchdog monitors it)"
-          - "  - NFS fstab / exports  (USB->SATA migration pending)"
-          - "  - systemd units/timers (hand-deployed; see servers/*.md)"
-          - "  - cron entries         (hand-deployed, incl. deadman-ping)"
-          - "  - nftables / firewall  (CrowdSec bouncer owns the rules)"
-          - "  - unattended-upgrades, borgmatic, keepalived, samba, unbound"
+          - "  - sudoers whitelist    (watchdog-monitored)"
+          - "  - apt / package state  (needs root; read-only whitelist)"
+          - "  - timezone             (already set on all 3)"
+          - "  - NFS fstab / exports  (storage migration pending)"
+          - "  - systemd units/timers (hand-deployed; see docs)"
+          - "  - cron entries         (hand-deployed)"
+          - "  - nftables / firewall  (IPS bouncer owns the rules)"
+          - "  - unattended-upgrades, backups, keepalived, samba, dns"
 
 # ---------------------------------------------------------------------------
 # What is explicitly OUT of scope for v1, and why:
 #
-# - sudoers whitelist: Hermes' watchdog cross-checks it; Ansible writing it
-#   would fight the agent and risk locking out SSH automation entirely.
-# - NFS (client fstab on milkymiracle/heavensfeel, /etc/exports on
-#   milis-wonderspace): live-tuned around the dying USB enclosure;
-#   templatizing now would drift from the post-migration reality. Revisit
-#   after the SATA migration lands.
-# - systemd units + timers (sync-qbit-port, cleanup-stale-mounts,
-#   bump-recent-media-mtime, smart-health-check, crowdsec-hubupdate) and
-#   cron entries (deadman-ping, lrc-sync): already deployed and stable by
-#   hand; v1 would need to model "present with exact content" for ~10
-#   units to add value — future work, not v1.
-# - nftables: CrowdSec firewall-bouncer manages rules dynamically.
-# - unattended-upgrades / borgmatic: host-specific, secret-adjacent config;
+# - apt / package state + timezone: both require root, but the nodes'
+#   sudoers has a NOPASSWD read-only whitelist (watchdog-monitored), so
+#   the v1-draft privileged tasks failed the first audit run with
+#   "Missing sudo password". All 3 nodes are already on Docker 29.6.1 and
+#   the right timezone, so v1 loses nothing. If package-drift detection is
+#   wanted in v2, add a narrowly-scoped, watchdog-blessed NOPASSWD entry —
+#   NOT a broad `apt*` grant (root-escalation vector via dpkg postinst).
+# - sudoers (NOPASSWD layer): the watchdog cross-checks it; Ansible
+#   writing it would fight the automation and risk locking out SSH
+#   automation entirely. The password-gated `%sudo` layer is human-only.
+# - NFS (client fstab + /etc/exports): live-tuned around storage
+#   hardware; templatizing now would drift from the post-migration
+#   reality. Revisit after the migration lands.
+# - systemd units + timers and cron entries: already deployed and stable
+#   by hand; v1 would need to model "present with exact content" for
+#   ~10 units to add value — future work, not v1.
+# - nftables: the IPS firewall-bouncer manages rules dynamically.
+# - unattended-upgrades / backup config: host-specific, secret-adjacent;
 #   document, don't templatize, until v2.
 #
-# Rule of thumb: if a human hand-tunes it on the node, Ansible does not own
-# it yet. Always run `ansible-playbook playbooks/site.yml --check` first.
+# Rule of thumb: if a human hand-tunes it on the node, Ansible does not
+# own it yet. Always run `ansible-playbook playbooks/site.yml --check` first.
 # ---------------------------------------------------------------------------

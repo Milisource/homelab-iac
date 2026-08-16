@@ -65,7 +65,7 @@ every change for cheap rollback.
 
 | Area | Why |
 |---|---|
-| sudoers whitelist | Hermes' watchdog monitors it — Ansible writing it would fight the agent and risk locking out automation |
+| sudoers (NOPASSWD layer) | The watchdog (see docs) monitors it — Ansible writing it would fight the automation and risk locking it out. (The password-gated `%sudo` layer is human-only, TTY; not Ansible's business either.) |
 | NFS (exports + client fstab) | Live-tuned around the dying USB enclosure; templatizing now would drift post-migration |
 | systemd units/timers + cron | Hand-deployed and stable (sync-qbit-port, cleanup-stale-mounts, bump-recent-media-mtime, deadman-ping, lrc-sync, smart-health-check, ...) |
 | nftables / firewall | CrowdSec firewall-bouncer owns the rules dynamically |
