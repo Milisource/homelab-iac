@@ -69,22 +69,29 @@ jobs:
       - uses: actions/checkout@v4
       - name: Scan compose images
         run: |
-          # Gate design (deliberate, see commit history 2026-08-15):
-          #   CRITICAL  -> fails the build (actionable, rare)
-          #   HIGH      -> reported per-image in the job summary, does NOT
-          #                fail: every image here tracks :latest and
-          #                upstreams rebuild on their own cadence (komga
-          #                1.26.3 ships 2022-era layers). Failing on HIGH
-          #                would keep the pipeline permanently red and
-          #                teach nobody anything.
-          #   .trivyignore -> deliberate, dated accepts (triaged by hand).
-          #   Diun (deployed 2026-08-15) notifies on every upstream
-          #   rebuild, so ignores get removed promptly.
+          # Gate design (revised 2026-09-21):
+          #   CRITICAL  -> fails the build, EXCEPT for images listed in
+          #                .trivy-lag-images (below).
+          #   HIGH      -> reported per-image in the job summary, never fails:
+          #                every image tracks a moving tag and upstreams rebuild
+          #                on their own cadence (komga ships 2022-era layers).
+          #   .trivyignore      -> precise, per-CVE, dated accepts.
+          #   .trivy-lag-images -> coarse, per-image advisory list, for images
+          #                whose CRITICALs are ALL known upstream rebuild-lag.
+          #                Rationale: per-CVE entries for images we merely
+          #                *run* multiply on every upstream release — 2026-09-21
+          #                added 125 to uptime-kuma alone, which left the gate
+          #                permanently red and therefore ignored. An image that
+          #                is NOT on this list still fails on any CRITICAL.
+          #   Diun notifies on upstream rebuilds — the trigger to re-check and
+          #   drop entries. The build warns when a listed image scans clean.
           #   Weekly schedule (see cron below) trends the counts.
           images=$(grep -hoE 'image: [^ ]+' compose/nodes/*.yml compose/stacks/*.yml compose/apps/*.yml | awk '{print $2}' | sed 's/"//g' | sort -u)
+          lag_file=".trivy-lag-images"
           rc=0
-          summary="| Image | CRITICAL | HIGH |"
-          summary+=$'\n|---|---|---|'
+          summary="| Image | CRITICAL | HIGH | Status |"
+          summary+=$'\n|---|---|---|---|'
+          lagged_clean=""
           for img in $images; do
             # Local builds don't exist on the runner (no registry image):
             #   camofox-browser:local (camofox), qbittorrent-ee:latest
@@ -114,9 +121,25 @@ jobs:
             crit=$(grep -o '"Severity": "CRITICAL"' /tmp/scan.json | wc -l)
             high=$(grep -o '"Severity": "HIGH"' /tmp/scan.json | wc -l)
             echo "  CRITICAL=$crit HIGH=$high"
-            summary+=$'\n'"| ${img} | ${crit} | ${high} |"
-            if [ "${crit:-0}" -gt 0 ]; then rc=1; fi
+            if grep -qxF "$img" "$lag_file" 2>/dev/null; then
+              if [ "${crit:-0}" -gt 0 ]; then
+                echo "  KNOWN-LAG (advisory — does not fail the build)"
+                summary+=$'\n'"| ${img} | ${crit} | ${high} | ⚠️ known-lag (advisory) |"
+              else
+                echo "  WARNING: listed in ${lag_file} but scans clean — remove it"
+                lagged_clean="${lagged_clean} ${img}"
+                summary+=$'\n'"| ${img} | ${crit} | ${high} | ✅ clean (stale lag entry) |"
+              fi
+            elif [ "${crit:-0}" -gt 0 ]; then
+              summary+=$'\n'"| ${img} | ${crit} | ${high} | ❌ FAIL |"
+              rc=1
+            else
+              summary+=$'\n'"| ${img} | ${crit} | ${high} | ✅ |"
+            fi
           done
+          if [ -n "$lagged_clean" ]; then
+            echo "::warning::.trivy-lag-images lists image(s) that now scan clean — remove:${lagged_clean}"
+          fi
           echo "$summary" >> "$GITHUB_STEP_SUMMARY"
           echo "exit-code=$rc" >> "$GITHUB_OUTPUT"
           exit $rc

@@ -1,0 +1,44 @@
+# .trivy-lag-images — images whose CRITICAL findings are ALL known upstream
+# rebuild-lag. They are reported in the CI job summary but do NOT fail the build.
+#
+# WHY THIS EXISTS (in addition to .trivyignore)
+#   .trivyignore is the precise tool: one CVE per line, dated, with evidence.
+#   But these are images we merely *run*, not build — every upstream release
+#   adds fresh CVEs to the same images, so the per-CVE file grew into a
+#   permanent maintenance treadmill. On 2026-09-21 uptime-kuma alone added 125
+#   CRITICALs, leaving the gate red for the fifth consecutive week — a gate
+#   that is always red teaches nobody anything.
+#   This list is the coarse counterpart: the image is known to lag its base.
+#
+# RULES
+#   - One image reference per line, exactly as written in a compose file.
+#     No trailing comments (matching is whole-line), no globs.
+#   - An image NOT listed here still fails the build on any CRITICAL.
+#   - The build emits a warning for any listed image that now scans clean, so
+#     stale entries get removed rather than accumulating.
+#   - Diun (all 3 nodes) notifies on upstream rebuilds — that is the trigger to
+#     re-check an entry and drop it.
+#
+# Review cadence: with the weekly cron run. Counts below are from CI run
+# 35642159547 (2026-09-21) and .trivyignore still handles vaultwarden.
+
+# Go toolchain lag in an update-notifier. No user data; outbound to registries
+# + Telegram only.
+crazymax/diun:latest
+
+# Node dependency lag. Auth'd behind Traefik/CrowdSec; request UI only.
+ghcr.io/seerr-team/seerr:latest
+
+# Ships pre-2022-era layers (komga 1.26.3). LAN-only reader behind Traefik.
+gotson/komga:latest
+
+# Debian 12 chromium (embedded for browser-based monitors) — 106 of the 125 are
+# chromium/chromium-common. NOT a false positive: upstream must rebuild once
+# Debian's chromium package moves.
+# NOTE: :latest is built on Debian 10, which went EOL — Trivy stops tracking
+# EOL distros, so :latest "scans clean" (3) while being the less safe choice.
+# Prefer :2. Do not "fix" this by switching back to :latest.
+louislam/uptime-kuma:2
+
+# Node/base lag. Auth'd behind Traefik/CrowdSec.
+n8nio/n8n:latest
