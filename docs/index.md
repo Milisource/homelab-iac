@@ -51,16 +51,19 @@ Metrics, logs, and dashboards: node_exporter, cAdvisor, Promtail, Prometheus, Lo
 
 ### [Storage](storage/overview.md)
 Physical layout, mergerFS pool, and NFS exports.
-See also the [USB migration deep-dive](storage/usb-migration.md) — why the pool lives on USB.
+See also the [USB migration deep-dive](storage/usb-migration.md) — why the pool lives on USB — and the [drives inventory](storage/drives.md).
 
 ### [Servers](servers/milkymiracle.md)
 Per-node hardware specs, roles, and service inventories.
 
 ### [Services](services/traefik.md)
-Deep-dives on the core services: Traefik, CrowdSec, Keepalived, AdGuard Home, Vaultwarden, and redlib-instances.
+Deep-dives on every service: Traefik, CrowdSec, Keepalived, AdGuard Home, Vaultwarden, Immich, Jellyfin, Navidrome, qBittorrent, Gluetun, SearXNG, FreshRSS, Diun, Grafana, Cockpit, slskd, CopyParty, 5etools, Tailscale, Vocard, Ansible, Camofox, plus [other services](services/other-services.md).
+
+### [Changelog](changelog.md)
+Dated, incident-style history of changes, fixes, and drift reconciliations.
 
 ### [Flows](flows/media-pipeline.md)
-End-to-end pipelines like download → playback.
+End-to-end pipelines like download → playback, and the [network flow](flows/network-flow.md).
 
 ---
 

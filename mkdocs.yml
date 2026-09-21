@@ -49,25 +49,55 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Changelog: changelog.md
   - Architecture:
       - Overview: architecture/overview.md
+      - Service Placement: architecture/service-placement.md
+      - Node Comparison: architecture/node-comparison.md
+      - Improvements: architecture/improvements.md
+      - V2 Roadmap: architecture/v2-roadmap.md
+      - Migration Plan: architecture/migration-plan.md
   - Network:
       - Topology: network/topology.md
+  - Swarm:
+      - Overview: swarms/swarm.md
   - Monitoring:
       - Stack: monitoring/README.md
   - Storage:
       - Overview: storage/overview.md
+      - Drives: storage/drives.md
       - USB Migration: storage/usb-migration.md
   - Servers:
       - milkymiracle: servers/milkymiracle.md
       - milis-wonderspace: servers/milis-wonderspace.md
       - heavensfeel: servers/heavensfeel.md
   - Services:
+      - 5etools: services/5etools.md
       - AdGuard Home: services/adguard.md
+      - Ansible: services/ansible.md
+      - Botasaurus: services/botasaurus.md
+      - Camofox: services/camofox.md
+      - Cockpit: services/cockpit.md
+      - CopyParty: services/copyparty.md
       - CrowdSec: services/crowdsec.md
+      - Diun: services/diun.md
+      - FreshRSS: services/freshrss.md
+      - Gluetun: services/gluetun.md
+      - Grafana: services/grafana.md
+      - Immich: services/immich.md
+      - Jellyfin: services/jellyfin.md
       - Keepalived: services/keepalived.md
+      - Masqueradarr: services/masqueradarr.md
+      - Navidrome: services/navidrome.md
+      - qBittorrent: services/qbittorrent.md
+      - redlib-instances: services/redlib-instances.md
+      - SearXNG: services/searxng.md
+      - slskd: services/slskd.md
+      - Tailscale: services/tailscale.md
       - Traefik: services/traefik.md
       - Vaultwarden: services/vaultwarden.md
-      - redlib-instances: services/redlib-instances.md
+      - Vocard: services/vocard.md
+      - Other Services: services/other-services.md
   - Flows:
       - Media Pipeline: flows/media-pipeline.md
+      - Network Flow: flows/network-flow.md
