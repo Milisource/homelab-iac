@@ -9,7 +9,7 @@ Intel N95 (Alder Lake-N) mini PC. 512GB NVMe SSD, dual HDMI, USB 3.2.
 
 ## Role
 
-Swarm manager node providing quorum. Runs the monitoring stack and automation services.
+Swarm manager node providing quorum — and the cluster's **current leader** (an elected Raft role; leadership can move between the three managers). Runs the monitoring stack and automation services.
 
 ## Services
 
@@ -25,6 +25,9 @@ Swarm manager node providing quorum. Runs the monitoring stack and automation se
 | Change Detection | Docker | Website change monitoring |
 | SearXNG | Docker | Private search engine |
 | Homepage | Docker | Service dashboard |
+| ArchiSteamFarm | Docker | Steam idle/card farming |
+| redlib-instances | Docker | Static Redlib instance list for the ASF free-games plugin (internal only) |
+| Fabula | Docker | Static campaign-log site |
 | Hermes | Systemd | AI agent gateway + dashboard |
 
 ## Storage

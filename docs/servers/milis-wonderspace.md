@@ -14,14 +14,17 @@ Yottamaster PS500RU3 USB 3.0 enclosure connected via a JMS578 bridge chip.
 |---------|------|---------|
 | mergerFS | Pool | JBOD pool of 5 drives → `/mnt/network` (29TB) |
 | NFS server | Export | Shares `/mnt/network` and `/DATA` to LAN |
-| Download Client | Docker | Handles automated downloads with isolated network |
-| VPN gateway | Docker | Routes traffic for isolated services |
-| *Arr suite | Docker | Radarr, Sonarr, Lidarr, Prowlarr, Bazarr |
+| Gluetun | Docker | VPN gateway (PIA) for the download client |
+| qBittorrent | Docker | Download client (shares Gluetun's network namespace) |
+| *Arr suite | Docker | Radarr, Sonarr, Lidarr, Prowlarr, Bazarr, Cleanuparr |
 | Navidrome | Docker | Music streaming |
 | Komga | Docker | Comic/manga/e-book reader |
-| Vaultwarden | Docker | Password manager |
-| n8n | Docker | Workflow automation |
-| Borgmatic | System | Daily encrypted backups |
+| slskd | Docker | Soulseek client |
+| CopyParty | Docker | Web file sharing over the mergerFS pool |
+| ArchiveBox | Docker | Self-hosted web archiving |
+| Borgmatic | Docker | Daily encrypted backups to an off-site repo |
+
+> Vaultwarden and n8n run on heavensfeel, not here — they were moved off this node.
 
 ## Storage
 

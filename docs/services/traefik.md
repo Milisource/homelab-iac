@@ -1,6 +1,6 @@
 # Traefik Reverse Proxy
 
-**Swarm service**: `traefik` (2 replicas across manager nodes)
+**Swarm service**: `traefik` (3 replicas — one per manager node, ports 80/443)
 **Ports**: 80, 443, 8080
 
 ## Configuration
@@ -31,10 +31,14 @@ Traefik's file watcher picks up changes within seconds — no restart needed.
 
 ```
 Request → Node:80/443 → Traefik
-  → entrypoint middleware: crowdsec-bouncer → secure-headers
+  → entrypoint (web → websecure redirect only)
   → per-router middleware (rate-limit only where configured)
   → Backend service
 ```
+
+> The `secure-headers` and `crowdsec-bouncer` middlewares are still *defined* but no router or
+> entrypoint references them: the Docker-based CrowdSec bouncer was retired and enforcement now
+> happens at the network layer via the native firewall bouncer (nftables) on each node.
 
 Rate limiting (`average: 100, burst: 50`) is applied **per-router**, not at the entrypoint.
 This prevents SPA static-asset bursts (50–150+ JS chunks on load) from triggering 429s:
@@ -44,7 +48,24 @@ This prevents SPA static-asset bursts (50–150+ JS chunks on load) from trigger
 
 ## Routed Services
 
-All services defined in `traefik/dynamic/standalone.yml`. Each service gets a CNAME record in Cloudflare for public access, or uses the wildcard `*.example.com → 192.168.50.99` for local DNS.
+All services are defined in `traefik/dynamic/standalone.yml` (plus a few Docker-label routes).
+
+### Public vs internal-only
+
+A Traefik router does **not** mean a service is reachable from the internet. Two DNS layers exist:
+
+| Layer | Covers |
+|-------|--------|
+| **Cloudflare CNAME** → the router's DDNS name | Externally reachable hosts (one record per public service). The CNAME chain follows the DDNS name, so it self-heals when the WAN address changes. |
+| **AdGuard wildcard** `*.example.com → 192.168.50.99` | Everything else — LAN/Tailscale clients resolve *any* subdomain to the VIP. Public resolvers return NXDOMAIN. |
+
+**Internal-only hosts** (router present, no Cloudflare record): `claims`, `5etools`, `search`,
+`status`, `watch`, `grafana`, `termix`, `slskd`, `immich`, `rss`, `iptv`, and
+`cockpit` / `cockpite` / `cockpith`. This is deliberate — do not add Cloudflare records for a
+service that is not meant to face the internet.
+
+`cloud` and `jobs` are Cloudflare-**proxied** (orange-cloud); the rest of the public hosts are
+DNS-only CNAMEs. See [Network Topology → Public DNS, DDNS & the WAN](../network/topology.md#public-dns-ddns-the-wan).
 
 ### Backends with Self-Signed TLS
 

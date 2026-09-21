@@ -1,0 +1,16 @@
+# Static serving of a curated Redlib instance list for the ASFFreeGames ASF plugin.
+# The plugin's freegames.json points `redlibInstanceUrl` at
+#   http://192.168.50.129:8192/instances.json
+# Seeded from https://github.com/redlib-org/redlib-instances (official list).
+#
+# NOTE: this is its own compose project, separate from the per-node heavensfeel.yml that the
+# Ansible deploy playbook converges — see docs/services/redlib-instances.md.
+services:
+  redlib-instances:
+    image: nginx:alpine
+    container_name: redlib-instances
+    restart: unless-stopped
+    ports:
+      - "8192:80"
+    volumes:
+      - /DATA/Apps/redlib-instances:/usr/share/nginx/html:ro

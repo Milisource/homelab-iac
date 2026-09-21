@@ -22,6 +22,7 @@ for standalone apps and `docker stack deploy` for swarm services.
 | How is the network laid out? | LAN, Tailscale, and Docker overlay networks. See [Network Topology](network/topology.md) |
 | How is the cluster monitored? | Prometheus + Loki + Grafana on heavensfeel. See [Monitoring](monitoring/README.md) |
 | How is the cluster protected from attackers? | CrowdSec WAF + firewall bouncer. See [CrowdSec](services/crowdsec.md) |
+| Is every service reachable from the internet? | No — only hosts with a Cloudflare record are public; the rest are internal-only via the AdGuard wildcard. See [Network Topology](network/topology.md#public-dns-ddns-the-wan) |
 | What are the hardware specs of each node? | See the [Servers](servers/milkymiracle.md) pages |
 | How do downloads flow from indexer to playback? | Prowlarr → *Arr → download client → media apps. See [Media Pipeline](flows/media-pipeline.md) |
 
@@ -56,7 +57,7 @@ See also the [USB migration deep-dive](storage/usb-migration.md) — why the poo
 Per-node hardware specs, roles, and service inventories.
 
 ### [Services](services/traefik.md)
-Deep-dives on the core services: Traefik, CrowdSec, Keepalived, AdGuard Home, Vaultwarden.
+Deep-dives on the core services: Traefik, CrowdSec, Keepalived, AdGuard Home, Vaultwarden, and redlib-instances.
 
 ### [Flows](flows/media-pipeline.md)
 End-to-end pipelines like download → playback.

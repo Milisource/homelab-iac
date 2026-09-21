@@ -16,7 +16,7 @@ streaming with GPU transcoding, and compute-heavy services.
 
 | Service | Type | Purpose |
 |---------|------|---------|
-| Traefik | Swarm | Reverse proxy (2 replicas, ports 80/443) |
+| Traefik | Swarm | Reverse proxy (3 replicas, one per manager, ports 80/443) |
 | CrowdSec LAPI | Native | Centralized WAF decision server |
 | Jellyfin | Docker | Media streaming (HW transcoded) |
 | Immich | Standalone | Photo management (PostgreSQL, ML) |

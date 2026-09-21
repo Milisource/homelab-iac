@@ -68,5 +68,6 @@ nav:
       - Keepalived: services/keepalived.md
       - Traefik: services/traefik.md
       - Vaultwarden: services/vaultwarden.md
+      - redlib-instances: services/redlib-instances.md
   - Flows:
       - Media Pipeline: flows/media-pipeline.md
