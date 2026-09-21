@@ -60,6 +60,18 @@ GHSA-hrxh-6v49-42gf
 CVE-2026-32316
 CVE-2026-69192
 CVE-2026-13697
+# perl-base (Debian 13.6 base) — vaultwarden/server:latest ships perl 5.40.1-6;
+# Debian has since released 5.40.1-6+deb13u1 covering all three. Upstream
+# vaultwarden has not rebuilt its base since.
+# Triaged 2026-09-21: vaultwarden is a Rust binary — perl is inherited
+# base-image cruft and is never invoked by the service, so there is no
+# reachable path (the findings are regex/tar-handling bugs inside perl itself).
+# This was the sole cause of the CI CRITICAL gate failing on 2026-08-31 through
+# 2026-09-21 weekly runs (CRITICAL=3). Remove this block once the vaultwarden
+# image rebuilds on deb13u1 (Diun will notify).
+CVE-2026-13221
+CVE-2026-42496
+CVE-2026-8376
 # 2026-08-15 batch — CRITICALs triaged as upstream rebuild-lag (17 unique).
 # Every entry has an upstream FixedVersion, but the :latest images are
 # ALREADY the current release (komga 1.26.3, uptime-kuma 2.5.0, seerr
