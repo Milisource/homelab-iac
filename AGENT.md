@@ -17,11 +17,11 @@ Public Infrastructure-as-Code repo for a 3-node Docker Swarm homelab cluster.
 
 ## Sanitization Rules
 
-- **Domains**: `example.com` — do NOT use `milisource.org`
+- **Domains**: `example.com` — never the real registered domain
 - **IPs**: Keep `192.168.50.x` (RFC1918) — these are architecture-relevant
 - **Secrets**: Always use `${VARIABLE}` placeholders, never hardcode
-- **Paths**: Use `/home/user/` instead of `/home/mili/`
-- **Usernames**: Use `user` instead of `mili`
+- **Paths**: Use `/home/user/` instead of the real home path
+- **Usernames**: Use `user` instead of the real username
 
 ## Key Decisions (documented in README)
 

@@ -129,10 +129,10 @@ http:
       service: jobs
       tls: { certResolver: le }
 
-    chat:
+    archivebox:
       entryPoints: [websecure]
-      rule: "Host(`chat.example.com`)"
-      service: chat
+      rule: "Host(`archive.example.com`)"
+      service: archivebox
       tls: { certResolver: le }
 
     bazarr:
@@ -234,7 +234,7 @@ http:
     foundryvtt:     { loadBalancer: { servers: [{ url: "http://foundryvtt:30000" }] } }
     homepage:       { loadBalancer: { servers: [{ url: "http://homepage:3000" }] } }
     jobs:           { loadBalancer: { servers: [{ url: "http://job-ops:3001" }] } }
-    chat:           { loadBalancer: { servers: [{ url: "http://open-webui:8080" }] } }
+    archivebox:     { loadBalancer: { servers: [{ url: "http://archivebox:8000" }] } }
     bazarr:         { loadBalancer: { servers: [{ url: "http://bazarr:6767" }] } }
     prowlarr:       { loadBalancer: { servers: [{ url: "http://prowlarr:9696" }] } }
     uptime-kuma:    { loadBalancer: { servers: [{ url: "http://uptime-kuma:3001" }] } }

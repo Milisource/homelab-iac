@@ -11,7 +11,7 @@
 
 polkit.addRule(function(action, subject) {
     if (action.id == "org.freedesktop.systemd1.manage-units" &&
-        subject.user == "mili" &&
+        subject.user == "user" &&
         action.lookup("unit").match(/^(cleanup-stale-mounts|smart-health-check|detect-stale-network)\.(service|timer)$/)) {
         return polkit.Result.YES;
     }

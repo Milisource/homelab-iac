@@ -8,7 +8,7 @@
 # CVE-2026-7210 — python: expat DoS (HIGH), fixed in python3 3.14.7-r0.
 # Affects copyparty/ac:latest (alpine 3.24.1 base, python3 3.14.5-r0).
 # Triaged 2026-08-15: denial-of-service in an internet-exposed but
-# personal file share (cloud.milisource.org) — no RCE/unauth access
+# personal file share (cloud.example.com) — no RCE/unauth access
 # path. Upstream image must rebuild with python3 >= 3.14.7-r0; remove
 # this entry once `docker run --rm copyparty/ac:latest python3 -V`
 # reports >= 3.14.7 (check the CI scan log for the fixed version).
@@ -21,7 +21,7 @@ CVE-2026-7210
 # images were built before the patched toolchain shipped — no newer
 # release exists.
 # Triaged 2026-08-15: diun is a notifier (outbound-only to registries +
-# Telegram, no user data); navidrome is LAN-only (navi.milisource.org
+# Telegram, no user data); navidrome is LAN-only (navi.example.com
 # behind Traefik/CrowdSec). DoS/UAF findings are low actual risk. Diun
 # itself will notify us the moment upstream rebuilds (watch for diun /
 # navidrome tag bumps, then remove this block).
@@ -53,7 +53,7 @@ GHSA-hrxh-6v49-42gf
 # CVE-2026-32316 (jq), CVE-2026-69192 (ip-address npm), CVE-2026-13697
 # (undici npm) — felddy/foundryvtt:latest.
 # Upstream fixes exist but the image tracks Foundry releases — no newer
-# build ships them yet. Triaged 2026-08-15: foundry.milisource.org is
+# build ships them yet. Triaged 2026-08-15: foundry.example.com is
 # auth'd + rate-limited behind Traefik; undici/ip-address are Node deps
 # not reachable pre-auth, jq is a utility binary. Diun will notify when
 # felddy rebuilds; remove this block then.

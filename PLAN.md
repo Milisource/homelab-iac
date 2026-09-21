@@ -28,12 +28,12 @@ monitoring dashboards, scripts, and architecture docs ready for publication.
 
 | Pattern | Replaced With | Rationale |
 |---------|---------------|-----------|
-| `milisource.org` | `example.com` | Real registered domain |
-| `*.milisource.org` | `*.example.com` | Same |
+| real registered domain | `example.com` | Avoids disclosing the deployment |
+| real wildcard subdomains | `*.example.com` | Same |
 | `192.168.50.x` | Kept as-is | RFC1918 private range, architecture-relevant |
-| `/home/mili/` | `/home/user/` or env vars | Personal home path |
+| real home path | `/home/user/` or env vars | Personal path |
 | API keys / tokens | `${VARIABLE}` placeholders | Sensitive credentials |
-| `mili` (username) | `user` or env vars | Personal identifier |
+| real username | `user` or env vars | Personal identifier |
 
 ### What Still Needs Work Before Publication
 
@@ -103,7 +103,7 @@ Client → VIP:53 → AdGuard Home → Unbound → Cloudflare DoT
 
 | File | Source | Services |
 |------|--------|----------|
-| `compose/nodes/milis-wonderspace.yml` | `milis-wonderspace.yml` (390 lines) | VPN gateway, Download client, *Arr suite, Navidrome, Komga, Open WebUI, slskd, CopyParty, Borgmatic |
+| `compose/nodes/milis-wonderspace.yml` | `milis-wonderspace.yml` | VPN gateway, Download client, *Arr suite, Navidrome, Komga, ArchiveBox, slskd, CopyParty, Borgmatic |
 | `compose/nodes/milkymiracle.yml` | `milkymiracle.yml` | Jellyfin, FoundryVTT, Vocard suite, Job-ops |
 | `compose/nodes/heavensfeel.yml` | `heavensfeel.yml` | Grafana, Prometheus, Loki, Vaultwarden, n8n, Uptime Kuma, Change Detection, Homepage, SearXNG, Hermes |
 | `compose/stacks/traefik-stack.yml` | `traefik-stack.yml` | Traefik (2 replicas) |

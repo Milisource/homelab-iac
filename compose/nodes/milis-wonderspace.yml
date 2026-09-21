@@ -312,53 +312,29 @@ services:
       - /dev/fuse:/dev/fuse
     restart: unless-stopped
 
-  # ═════════════════════════════════════════════════
-  # AI STACK
-  # ═════════════════════════════════════════════════
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    volumes:
-      - /DATA/Apps/ollama/models:/root/.ollama
-    ports:
-      - "11434:11434"
-    networks:
-      - traefik-overlay
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:latest
-    container_name: open-webui
+  # ── archivebox (self-hosted web archiving) ──
+  archivebox:
+    image: archivebox/archivebox:dev
+    container_name: archivebox
     environment:
-      OLLAMA_BASE_URL: "http://ollama:11434"
-      WEBUI_SECRET_KEY: ${OPENWEBUI_SECRET_KEY}
-      WEBUI_NAME: "AI Chat"
-      ENABLE_SIGNUP: "false"
-      WEBUI_SEARCH_ENGINE: "searxng"
-      SEARXNG_QUERY_URL: ${SEARXNG_QUERY_URL:-http://192.168.50.129:8080/search}
+      TZ: "America/New_York"
+      BASE_URL: "https://archive.example.com"
+      ADMIN_USERNAME: ${ARCHIVEBOX_ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ARCHIVEBOX_ADMIN_PASSWORD}
+      PUBLIC_ADD_VIEW: "False"
+      SAVE_ARCHIVE_DOT_ORG: "False"
+      SHOW_PROGRESS: "False"
     volumes:
-      - /DATA/Apps/open-webui:/app/backend/data
+      - /mnt/network/Archives/archivebox:/data
+      - /mnt/network/Archives/archivebox/personas:/data/personas
     ports:
-      - "3000:8080"
+      - "8000:8000"
     networks:
       - traefik-overlay
+    shm_size: "1gb"
+    pids_limit: 2048
     restart: unless-stopped
-    depends_on:
-      ollama:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+    # Router defined in traefik/dynamic/standalone.yml
 
   glances:
     image: nicolargo/glances:latest

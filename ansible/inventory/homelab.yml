@@ -21,7 +21,7 @@ all:
         heavensfeel: {}
 
     # Storage + downloads: qBittorrent behind gluetun, *Arr suite,
-    # Navidrome/Komga/slskd, Ollama + Open WebUI, NFS server, Samba,
+    # Navidrome/Komga/slskd, ArchiveBox, NFS server, Samba,
     # unbound, keepalived (VIP .99, priority 50), borgmatic.
     storage:
       hosts:

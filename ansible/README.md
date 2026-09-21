@@ -26,6 +26,12 @@ First Ansible layer for the 3-node Docker Swarm homelab
 
 ## Quickstart
 
+**Where to run:** the control node can be any machine that can SSH to the
+targets — Ansible is push-based, so it runs no daemon and is never polled. For
+*manual* deploys it therefore does **not** need to be always-on. It only pays to
+put it on a machine that stays up if you want scheduled drift audits or
+CI-triggered deploys.
+
 All commands run from inside `ansible/` (ansible.cfg paths are
 cwd-relative):
 
