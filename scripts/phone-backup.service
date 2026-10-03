@@ -1,0 +1,22 @@
+[Unit]
+Description=Pull portable Android phone data to the NAS pool
+After=network-online.target remote-fs.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Run as `mili`, not root: the adb server, its host key and the ~/.android
+# trust store all live in mili's home. Root has none of them, so a root run
+# cannot authorise against the phone (same class of bug as the rclone/vaultwarden
+# job on this node).
+User=user
+Group=mili
+Environment=HOME=/home/user
+# Wireless-debugging endpoint. The port is pinned to 5555 via
+# `adb tcpip 5555` (issued once over USB from the laptop), so it no longer
+# rotates on Wi-Fi reconnects. It DOES reset on a phone reboot or if
+# Wireless debugging is toggled — re-issue `adb tcpip 5555` over USB if the
+# timer starts failing. (The old rotating port was 42215.)
+Environment=PHONE_ADB_HOST=192.168.50.112
+Environment=PHONE_ADB_PORT=5555
+ExecStart=/usr/local/bin/phone-backup.sh

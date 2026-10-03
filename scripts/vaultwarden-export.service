@@ -1,0 +1,8 @@
+[Unit]
+Description=Export Vaultwarden and encrypt with age for pickup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/vaultwarden-export.sh

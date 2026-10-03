@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Android phone backup timer
+
+[Timer]
+OnCalendar=*-*-* 04:30:00
+Persistent=true
+Unit=phone-backup.service
+
+[Install]
+WantedBy=timers.target

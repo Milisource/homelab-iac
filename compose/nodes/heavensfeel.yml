@@ -286,6 +286,34 @@ services:
       - /home/user/borg-repos:/repos
     restart: unless-stopped
 
+  # ── borgmatic (heavensfeel backs itself up) ──
+  # Previously /DATA/Apps on this node was in NO Borg repo, because borgmatic
+  # only ran on milis-wonderspace against a different machine. Vaultwarden,
+  # n8n, grafana and actual were entirely unprotected. This job covers them:
+  #   config.yaml           -> /repos/self       (local, via the bind mount)
+  #   borgmatic.d/10-offsite.yaml -> Hetzner Box (off-site)
+  borgmatic:
+    image: ghcr.io/borgmatic-collective/borgmatic:latest
+    container_name: borgmatic
+    environment:
+      TZ: "America/New_York"
+      BORGMATIC_CONFIG: "/etc/borgmatic/config.yaml"
+      BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK: "yes"
+      # Staggered 1h before the wonderspace job so the two off-site pushes
+      # do not contend for the Box's 10-connection limit.
+      CRON: "0 5 * * *"
+    volumes:
+      - /DATA/Apps/borgmatic:/etc/borgmatic
+      - /DATA/Apps/borgmatic/borgmatic.d:/etc/borgmatic.d:ro
+      - /home/user/borg-repos:/repos
+      - /DATA/Apps/borgmatic/ssh:/root/.ssh:ro
+      - /DATA:/source/DATA:ro
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse:/dev/fuse
+    restart: unless-stopped
+
   freshrss:
     image: freshrss/freshrss:edge
     container_name: freshrss

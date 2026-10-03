@@ -1,0 +1,14 @@
+[Unit]
+Description=Push age-encrypted Vaultwarden export to Google Drive
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Run as `mili`, not root: that user owns the rclone config (gdrive token) and
+# has the SSH key/config needed to pull from heavensfeel. Root has neither,
+# so running as root fails at both steps.
+User=user
+Group=mili
+Environment=HOME=/home/user
+ExecStart=/usr/local/bin/vaultwarden-gdrive-upload.sh

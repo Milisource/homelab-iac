@@ -23,6 +23,25 @@ Public Infrastructure-as-Code repo for a 3-node Docker Swarm homelab cluster.
 - **Paths**: Use `/home/user/` instead of the real home path
 - **Usernames**: Use `user` instead of the real username
 
+### Known limitation — sanitized paths are not deployable
+
+`/home/user/` is safe for *documentation*, but **not** for paths that are
+actually consumed by a deploy. The public mirror contains functional
+bind-mount sources such as `compose/nodes/heavensfeel.yml`:
+
+```yaml
+  borg-repo:
+    volumes:
+      - /home/user/borg-repos:/repos      # does not exist on the real host
+```
+
+On the live hosts the real path is under the operator's home directory, and
+`/home/user` does not exist. Deploying the public mirror as-is would mount a
+missing source (and the same applies to the `docker/build/*` build contexts),
+so **deploys must come from the private repo** (`Milisource/homelab`, the
+control-node clone — `/home/user/homelab` in these docs), where the paths are
+real. The public mirror is for reference and review.
+
 ## Key Decisions (documented in README)
 
 - Docker Swarm over K8s (simpler for 3-node cluster)

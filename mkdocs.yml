@@ -75,6 +75,7 @@ nav:
       - 5etools: services/5etools.md
       - AdGuard Home: services/adguard.md
       - Ansible: services/ansible.md
+      - Backups: services/backups.md
       - Botasaurus: services/botasaurus.md
       - Camofox: services/camofox.md
       - Cockpit: services/cockpit.md
@@ -89,6 +90,8 @@ nav:
       - Keepalived: services/keepalived.md
       - Masqueradarr: services/masqueradarr.md
       - Navidrome: services/navidrome.md
+      - Phone & Personal-Data Backup: services/phone-backup.md
+      - Personal Vault Backup: services/vault-backup.md
       - qBittorrent: services/qbittorrent.md
       - redlib-instances: services/redlib-instances.md
       - SearXNG: services/searxng.md

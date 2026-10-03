@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Vaultwarden export timer (heavensfeel)
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+Unit=vaultwarden-export.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Vaultwarden GDrive upload timer (milis-wonderspace)
+
+[Timer]
+# Runs 90 min after the heavensfeel export (04:00), leaving time for it to finish.
+OnCalendar=*-*-* 05:30:00
+Persistent=true
+Unit=vaultwarden-gdrive-upload.service
+
+[Install]
+WantedBy=timers.target

@@ -11,6 +11,197 @@ Ops: **Ansible** (GitOps: compose + traefik configs converged from this repo) ·
 
 ## Changelog
 
+### 2026-10-03 — off-site backups (Hetzner BX11) + phone/personal-data coverage
+
+**Context:** a phone breakage exposed two gaps — personal data (contacts, SMS,
+call log, calendar, notes) had no backup path, and there was no off-site copy
+of anything.
+
+**Architecture decision:** borgmatic runs **per node**, repos are central.
+Rejected centralising on wonderspace via SSH/NFS (borgmatic sources are local
+paths; the 2026-08-11 silent-failure incident showed centralisation amplifies
+one config error). Each node holds one restricted key.
+
+**Off-site repo (new):**
+- Hetzner Storage Box BX11 (1 TB), `uXXXXX@uXXXXX.your-storagebox.de:23`.
+- wonderspace repo: `./backups/homelab`, `repokey-blake2`, key exported to
+  `/DATA/Apps/borgmatic/repos/offsite-key-export.txt`.
+- heavensfeel repo: `./backups/heavensfeel`, own key `borgmatic@heavensfeel`
+  installed on the Box.
+- Remote Borg pinned to `borg-1.4` (Box default 1.2.9; containers run 1.4.5).
+- **borgmatic applies options globally per config file**, so the off-site repo
+  cannot share `config.yaml` with the LAN repo (the LAN repo is served via a
+  forced command and must not receive `--remote-path`). Split into
+  `/etc/borgmatic.d/10-offsite.yaml`, bind-mounted from
+  `/DATA/Apps/borgmatic/borgmatic.d`. Verified both configs load.
+- Compose gains `/mnt/network:/source/network:ro`, the `borgmatic.d` mount,
+  and (on heavensfeel) a borgmatic client container. Cron staggered
+  (heavensfeel 05:00, wonderspace 06:00) for the Box's 10-connection limit.
+
+**heavensfeel gap closed:** `/DATA/Apps` (Vaultwarden, n8n, grafana, actual)
+was in **no** Borg repo. Now covered by a local job → `/repos/self` plus the
+off-site job. Vaultwarden uses borgmatic's `sqlite_databases` hook
+(`sqlite3 .backup`), which matters because `db.sqlite3` is WAL-mode with an
+active 4 MB `-wal` file — a plain copy would be stale/corrupt. Verified in
+the archive at `borgmatic/sqlite_databases/localhost/vaultwarden`.
+
+**Phone bundle (new):** `scripts/phone-backup.{sh,service,timer}` — adb
+over TCP/IP pulls contacts, SMS/MMS, call log, calendar, notes and a package
+inventory into a dated, self-describing bundle (`MANIFEST.json` + restore
+`README.md`) under `/mnt/network/Backups/phone`.
+
+**Phone job made live and genuinely restorable (same day).** Verified against
+the real device (**Galaxy S25+, SM-S936U, Android 16, SDK 36**):
+
+- Contrary to the original assumption, Samsung's Android 16 **allows the shell
+  user to read the contacts, calendar, SMS and call-log providers** — no root,
+  no helper app, no DAVx5 and no CalDAV/CardDAV server (none exists in the
+  homelab). The doc's earlier DAVx5 recommendation is superseded.
+- The raw `content query` dumps were **not restorable**, and `contacts` carried
+  no phone numbers (only a `has_phone_number` flag), so the script now also
+  emits **importable artifacts**: `contacts.vcf` (built from the `data` table,
+  pulling real TEL/EMAIL rows), `calendar.ics`, and `sms-calls.xml` in the SMS
+  Backup & Restore schema.
+- Capture result: **130 vCards (with numbers), 736 calendar events, 913 SMS,
+  2000 call-log rows, 170 packages** — ~1.7 MB.
+- **Call log is capped at 2000 rows** by the provider; older calls are not
+  retrievable over adb. Documented in the bundle README.
+- Service runs `User=user` (owns the adb key/trust store; root has neither) and
+  the unit carries the real `192.168.50.112:42215` endpoint. Both adb ports
+  rotate on Wi-Fi/Wireless-debugging changes; mDNS discovery does not work on
+  this network, so the port is set manually and a drift fails loudly.
+- Timer enabled; first scheduled run 04:30 local.
+
+**Phone bundle extended (same day).** A survey of what else the device exposes
+showed three more sources worth taking, all added:
+
+- **MMS** — 4627 messages were previously invisible (the job only read
+  `content://sms`). Now captured: message/addr/part raw dumps plus the
+  **attachment bytes** (304 images, 16 videos, 1 PDF). Parts' `_data` paths
+  are in private app storage and unreadable, so bytes are streamed with
+  `adb exec-out content read --uri content://mms/part/<id>`. Attachments go
+  to a **shared store at the backup root** (`mms-attachments/`) rather than
+  the dated bundle, so each is fetched once ever — a per-day copy would
+  re-download hundreds of MB every run. The prune now matches only
+  date-patterned dirs, so the shared store is never swept.
+- **Call recordings** — `/sdcard/Recordings/Call` → `callrecordings/`.
+- **Shared-storage sweep** — `Elements` (the phone's Obsidian vault), plus
+  `Documents`, `Music`, `Movies`, ringtone/notification/alarm dirs, and
+  document-type files from `Download` (pdf/xlsx/txt/ovpn/doc/csv).
+- `sms-calls.xml` now also carries `<mms>` entries with `<addr>`/`<part>`
+  children in the SMS Backup & Restore schema.
+
+**Personal Obsidian vault backed up (new service).** Sweeping the phone
+exposed a larger gap: `~/Documents/The Compendium` on the workstation
+(**264 notes, 112 MB** of `Chapters`, `Lore`, `TTRPGs`, `Programming`,
+`IMG Dump`) was in **no** backup path — not git, not a Syncthing folder as a
+whole, not Borg. Only the `Homelab` subfolder had coverage. Now:
+
+- A **Syncthing** container on wonderspace (`/DATA/Apps/syncthing`, UI on
+  `:8384`, sync on `:22000`) receives the vault to
+  `/mnt/network/Backups/vault`.
+- Folder `compendium-backup` is **sendonly** on the laptop and
+  **receiveonly** on the NAS — a corrupt or wrong NAS copy cannot propagate
+  back to the source. Folder IDs must match on both ends (Syncthing pairs by
+  ID, not label); config applied via the REST API and verified with
+  `/rest/db/status`.
+- First sync: **218 files / 43.8 MB**, `needFiles: 0`, `errors: 0`.
+- `Homelab` is excluded from the parent folder (it has its own Syncthing
+  folder; nesting would cause index/conflict churn) and `.git`/`node_modules`
+  with it. Borg also excludes `Apps/syncthing/index-v2`.
+- `/source/network/Backups/vault` added to **both** borgmatic configs.
+
+**Vaultwarden → GDrive (age-encrypted artifact, live):** the dead
+2025-11-28 tarball cron is replaced by a two-stage pipeline that keeps
+rclone credentials on one node:
+
+- `scripts/vaultwarden-export.{sh,service,timer}` on **heavensfeel** (04:00):
+  admin-API export + `vaultwarden backup` (sqlite-consistent), tar.gz, then
+  **age**-encrypt to `/DATA/Apps/vaultwarden/export/vaultwarden-<date>.tar.gz.age`
+  (private key `/DATA/Apps/borgmatic/keys/age-vaultwarden.key`, mode 600 —
+  **must be backed up offline**; the public key is embedded in the script).
+- `scripts/vaultwarden-gdrive-upload.{sh,service,timer}` on **wonderspace**
+  (05:30): pulls the artifact over SSH, verifies the age header, `rclone copy`
+  to `gdrive:homelab-backups/vaultwarden/`, prunes to 7d/4w/6m, and mirrors
+  locally to `/mnt/network/Backups/vaultwarden` for Borg.
+
+Pipeline verified end-to-end: Drive holds `vaultwarden-2026-10-03.tar.gz.age`
+(836 KB) and the local mirror is picked up by the new Borg sources.
+
+Four bugs found and fixed during the live deploy — all in the upload script:
+- `rclone lsd "${GDRIVE_REMOTE%%:*}"` stripped the colon, so rclone read
+  `gdrive` as a *local folder*. Now `"$GDRIVE_NAME:"`.
+- The service ran as **root**, but root has no rclone config and no SSH key.
+  Switched to `User=user` + `Environment=HOME=/home/user`, and `HF_HOST` uses
+  an **IP** (192.168.50.129) rather than the `hserver` alias, which exists only
+  in `mili`'s laptop-side `~/.ssh/config`.
+- The prune step's Python subprocess invoked bare `rclone`, missing the config;
+  now passes `--config` through.
+- A `|| true` on the local mirror hid a root-owned `/mnt/network/Backups/vaultwarden`
+  that `mili` could not write. Directory recreated as `mili`; the step now
+  `die`s on failure instead of silently skipping — this mirror is the only path
+  from the encrypted export into Borg.
+
+**Borg source lists extended (both configs):** `/source/network/Backups/phone`,
+`/source/network/Backups/vaultwarden` and `/source/network/Photos/immich/backups`
+added to the LAN *and* off-site configs; the pool excludes
+(`immich/{library,thumbs,encoded-video}`, `**/lost+found`) mirrored into the
+LAN config. A `PLACEHOLDER.md` in `Backups/phone` keeps the source valid until
+the phone job's first run (a missing source directory fails a borgmatic run).
+
+**Env findings:**
+- **mergerfs pool root is not writable** — `/mnt/disk2`, `disk3`, `disk5` are
+  root-owned, so `mkdir` at `/mnt/network` fails. `/mnt/network/Backups` now
+  exists via `sudo mkdir` + `chown mili:mili`. Any dir created *as root* under
+  the pool is unwritable by `mili`-run jobs — the class of bug above.
+- **`gdrive:` rclone remote token expired** (`invalid_grant`) — reconnected.
+  GDrive is not a Borg target; the encrypted age artifact above is the copy.
+  The OAuth app is likely in **Testing** mode (7-day refresh tokens) — publishing
+  it is the durable fix, and `http://127.0.0.1:53682/` must stay an Authorized
+  redirect URI.
+- Root's `$HOME`/`~/.ssh` differ from `mili`'s; do not assume a root-run systemd
+  unit sees the user's SSH config, keys or rclone token. Run user-scoped jobs
+  as the user.
+- terminalless `systemctl`/`journalctl` need `--no-pager` (or `SYSTEMD_PAGER=cat`);
+  multi-line pastes into the terminal swallow later commands' output.
+- Immich DB dumps accumulate unpruned (~50 MB/day).
+- Vaultwarden's old tarball cron died 2025-11-28 (10-month gap, now closed).
+  Confirmed **dead** (no crontab, no timer, no on-disk artifacts), so it cannot
+  double-write alongside the new export job.
+
+**Drive layout tidied:** the stale top-level `VaultwardenBackups/` folder held
+7 *unencrypted* tarballs from 2025-11-22 → 2025-11-28 — the last copies before
+the 10-month gap. Its newest was preserved (MD5-verified) to
+`homelab-backups/legacy-pre-gap/` and the folder purged (to Drive trash). The
+legacy file is unencrypted and predates the age pipeline; it is kept only as a
+pre-gap recovery point.
+
+**Off-site job was configured but not actually running (found + fixed same
+day).** Verifying the Hetzner repos showed the wonderspace container had
+**never** touched the Box on schedule: every 06:00 run logged exactly one
+`Repository:` line (the LAN repo), and `./backups/homelab` held a single
+archive from an earlier *manual* create. Cause: the Hetzner job lives in
+`borgmatic.d/10-offsite.yaml`, which borgmatic auto-discovers only when
+`/etc/borgmatic.d` is mounted. The compose file gained that mount at 01:56,
+but the **running container predated the edit (started 00:24)** and therefore
+had no such mount. A compose edit does not change a running container.
+Fixed by recreating it (`docker compose up -d borgmatic`), then verified
+against the *live* mounts (`docker inspect`), `borgmatic config validate`
+(both files load) and `borgmatic repo-list` (both `heavensfeel` and `hetzner`
+labels present). A manual run then produced the first real off-site archive,
+confirmed to contain the phone bundle (1987 entries — contacts, SMS/MMS, call
+log, calendar, 308 MMS attachments, misc sweep), the vault (311 entries),
+the age-encrypted Vaultwarden export, and the Immich DB dumps. Box now holds
+~7.3 GB (`homelab`) + ~1.6 GB (`heavensfeel`). Same failure class as the
+2026-08-15 SSH-volume miss.
+
+**Deferred: append-only Borg hardening.** The daily key is still unrestricted
+(create + prune + compact in one run). Making it append-only requires splitting
+into an automated create-only job plus a separate prune job using an offline
+key, because an append-only key cannot delete and borgmatic's prune would fail.
+Skipped deliberately for now; the Box keys (including the unrestricted `My Key`)
+are also left as-is. Revisit as a dedicated change.
+
 ### 2026-09-21 (live audit) — fleet re-audit: leader moved, Immich v3, redlib-instances documented, DNS exposure mapped
 
 Re-inventoried all three nodes against the docs (`docker ps`, `docker node ls`, swarm services, systemd timers, crontabs, Traefik routers, and the Cloudflare zone). Drift found and reconciled:

@@ -303,9 +303,14 @@ services:
       CRON: "0 6 * * *"
     volumes:
       - /DATA/Apps/borgmatic:/etc/borgmatic
+      # borgmatic auto-discovers /etc/borgmatic.d; mount the host dir there
+      # so 10-offsite.yaml (Hetzner) is picked up alongside config.yaml (LAN).
+      - /DATA/Apps/borgmatic/borgmatic.d:/etc/borgmatic.d:ro
       - /DATA/Apps/borgmatic/repos:/repos
       - /DATA/Apps/borgmatic/ssh:/root/.ssh:ro
       - /DATA:/source/DATA:ro
+      # Phone bundle + Immich DB dumps live on the mergerfs pool.
+      - /mnt/network:/source/network:ro
     cap_add:
       - SYS_ADMIN
     devices:
@@ -335,6 +340,28 @@ services:
     pids_limit: 2048
     restart: unless-stopped
     # Router defined in traefik/dynamic/standalone.yml
+
+  # ── syncthing (receives the personal vault for Borg coverage) ──
+  # The authoring vault ~/Documents/The Compendium on the workstation is
+  # NOT in git, Borg or any NAS path — only the Homelab subfolder syncs.
+  # This instance receives the whole vault into a pool path that both
+  # borgmatic configs already cover.
+  syncthing:
+    image: syncthing/syncthing:latest
+    container_name: syncthing
+    environment:
+      TZ: "America/New_York"
+      PUID: "1000"
+      PGID: "1000"
+    volumes:
+      - /DATA/Apps/syncthing:/var/syncthing/config
+      - /mnt/network/Backups/vault:/var/syncthing/vault
+    ports:
+      - "8384:8384"     # web UI (LAN only; not published through Traefik)
+      - "22000:22000/tcp"
+      - "22000:22000/udp"
+      - "21027:21027/udp"
+    restart: unless-stopped
 
   glances:
     image: nicolargo/glances:latest
