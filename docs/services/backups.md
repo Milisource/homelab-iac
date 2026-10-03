@@ -19,9 +19,9 @@ Three independent layers:
 |------|--------|----------|:----:|:--------:|--------------|
 | App configs + DBs (`/DATA/Apps`, `/DATA/Arr`, `/DATA/Media`) | milis-wonderspace | files | ✅ LAN + Hetzner | ✅ | `borg extract` |
 | App configs + DBs (`/DATA/Apps`) | heavensfeel | files + sqlite hook | ✅ local + Hetzner | ✅ | `borg extract` |
-| Contacts / SMS / MMS / calls / calendar / notes / misc | Android phone (adb) | `contacts.vcf`, `calendar.ics`, `sms-calls.xml`, attachments | ✅ | ✅ | see [[phone-backup]] |
-| Personal Obsidian vault ("The Compendium") | workstation | live files (Syncthing) | ✅ | ✅ | see [[vault-backup]] |
-| Vaultwarden export | heavensfeel | `*.tar.gz.age` | ✅ (mirror) | ✅ | age-decrypt, see [[vaultwarden]] |
+| Contacts / SMS / MMS / calls / calendar / notes / misc | Android phone (adb) | `contacts.vcf`, `calendar.ics`, `sms-calls.xml`, attachments | ✅ | ✅ | see [phone-backup](phone-backup.md) |
+| Personal Obsidian vault ("The Compendium") | workstation | live files (Syncthing) | ✅ | ✅ | see [vault-backup](vault-backup.md) |
+| Vaultwarden export | heavensfeel | `*.tar.gz.age` | ✅ (mirror) | ✅ | age-decrypt, see [vaultwarden](vaultwarden.md) |
 | Immich DB dumps | milkymiracle → pool | `immich-db-backup-*.sql.gz` | ✅ | ✅ | `gunzip` + `psql` |
 
 **Deliberately NOT backed up:**
@@ -127,7 +127,7 @@ docker compose -f milis-wonderspace.yml exec -T borgmatic sh -c '
 ```
 
 Phone-specific restore steps are in the bundle's own `README.md` (regenerated
-each run) and in [[phone-backup]].
+each run) and in [phone-backup](phone-backup.md).
 
 ## Known gaps / limits
 
@@ -158,7 +158,7 @@ each run) and in [[phone-backup]].
 
 ## See also
 
-- [[phone-backup]] — Android bundle design + restore
-- [[vault-backup]] — Compendium via Syncthing
-- [[vaultwarden]] — age-encrypted export → GDrive
-- [[other-services]] — borgmatic service notes
+- [phone-backup](phone-backup.md) — Android bundle design + restore
+- [vault-backup](vault-backup.md) — Compendium via Syncthing
+- [vaultwarden](vaultwarden.md) — age-encrypted export → GDrive
+- [other-services](other-services.md) — borgmatic service notes
