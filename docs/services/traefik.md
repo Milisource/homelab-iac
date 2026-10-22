@@ -59,10 +59,14 @@ A Traefik router does **not** mean a service is reachable from the internet. Two
 | **Cloudflare CNAME** → the router's DDNS name | Externally reachable hosts (one record per public service). The CNAME chain follows the DDNS name, so it self-heals when the WAN address changes. |
 | **AdGuard wildcard** `*.example.com → 192.168.50.99` | Everything else — LAN/Tailscale clients resolve *any* subdomain to the VIP. Public resolvers return NXDOMAIN. |
 
-**Internal-only hosts** (router present, no Cloudflare record): `claims`, `5etools`, `search`,
-`status`, `watch`, `grafana`, `termix`, `slskd`, `immich`, `rss`, `iptv`, and
-`cockpit` / `cockpite` / `cockpith`. This is deliberate — do not add Cloudflare records for a
-service that is not meant to face the internet.
+**Internal-only hosts** (router present, no Cloudflare record): `claims`, `5etools`, `fabula`,
+`search`, `status`, `watch`, `grafana`, `termix`, `slskd`, `immich`, `rss`, `iptv`, `money`,
+`budget`, `sure`, `ha`, and `cockpit` / `cockpite` / `cockpith`. This is deliberate — do not add
+Cloudflare records for a service that is not meant to face the internet.
+
+**Bazarr is LAN-only.** Its public router was removed on 2026-10-19 after an RCE incident
+(`bazarr.example.com` now 404s on every node). Reach it at `http://192.168.50.115:6767`; the port
+is published on milis-wonderspace. Do not re-add the router without fixing the exposure first.
 
 `cloud` and `jobs` are Cloudflare-**proxied** (orange-cloud); the rest of the public hosts are
 DNS-only CNAMEs. See [Network Topology → Public DNS, DDNS & the WAN](../network/topology.md#public-dns-ddns-the-wan).

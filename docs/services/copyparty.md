@@ -29,3 +29,12 @@ CopyParty is a lightweight, dependency-free file sharing web server. It serves t
 
 - Serves the full `/mnt/network` pool — be careful what you link/share externally
 - Runs on the storage node (milis-wonderspace) so it reads directly from the pool — no NFS round-trip
+- The root volume is not anonymous-readable: anonymous `GET /` returns **403** by design
+
+## Monitoring
+
+The uptime monitor was a permanent false positive until 2026-10-21 — it accepted only `200-299`
+while the auth wall returned 401/403 to anonymous probes. It now authenticates with HTTP Basic as
+a dedicated **`monitor`** account holding `r` on `/` only (read/list, no write). The auth wall was
+not weakened. If `[accounts]` or the root `r:` line in `copyparty.conf` is rewritten, keep
+`monitor` or the check goes red again.

@@ -36,6 +36,15 @@ Immich is a self-hosted photo and video backup solution, similar to Google Photo
 - Database password in .env file
 - TLS termination at Traefik
 
+## Home Assistant
+
+The Home Assistant integration points at `http://192.168.50.122:2283` with an API key named
+"Home Assistant" (permission `all`). The admin password is not stored on disk, so the key was
+inserted directly into `api_key` in the DB: random token, sha256 in the `key` column,
+`permissions = {all}`. `users/me` returns 200 with it. Entities appear as `sensor.<immich-user>_*`
+— that prefix is the Immich user name, not a typo. To revoke, delete the row or rotate the key in
+the UI.
+
 ## Data Layout
 
 ```

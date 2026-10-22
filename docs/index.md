@@ -34,7 +34,8 @@ for standalone apps and `docker stack deploy` for swarm services.
 |------|----|------|--------------|
 | [milkymiracle](servers/milkymiracle.md) | 192.168.50.122 | Compute, Media, Proxy | Traefik, Jellyfin, CrowdSec LAPI |
 | [milis-wonderspace](servers/milis-wonderspace.md) | 192.168.50.115 | Storage, Downloads | mergerFS, NFS, *Arr suite |
-| [heavensfeel](servers/heavensfeel.md) | 192.168.50.129 | Monitoring, Automation | Grafana, Prometheus, n8n, SearXNG |
+| [heavensfeel](servers/heavensfeel.md) | 192.168.50.129 | Monitoring, Automation | Grafana, Prometheus, n8n, SearXNG, Home Assistant |
+| [Steam Deck](servers/steamdeck.md) | 192.168.50.145 | Burst compute (**not** in Swarm) | llama.cpp / Vulkan |
 
 ---
 
@@ -57,7 +58,9 @@ See also the [USB migration deep-dive](storage/usb-migration.md) — why the poo
 Per-node hardware specs, roles, and service inventories.
 
 ### [Services](services/traefik.md)
-Deep-dives on every service: Traefik, CrowdSec, Keepalived, AdGuard Home, Vaultwarden, Immich, Jellyfin, Navidrome, qBittorrent, Gluetun, SearXNG, FreshRSS, Diun, Grafana, Cockpit, slskd, CopyParty, 5etools, Tailscale, Vocard, Ansible, Camofox, plus [other services](services/other-services.md).
+Deep-dives on every service: Traefik, CrowdSec, Keepalived, AdGuard Home, Vaultwarden, Immich, Home Assistant, Jellyfin, Navidrome, qBittorrent, Gluetun, SearXNG, FreshRSS, Diun, Grafana, Cockpit, slskd, CopyParty, 5etools, Tailscale, Vocard, Ansible, Camofox, plus [other services](services/other-services.md).
+Also: [money-map](services/money-map.md) and [Actual Budget](services/actual-budget.md),
+[Voice Assist](services/voice.md), and the [on-demand GPU LLM](services/vast-llm.md).
 
 ### [Changelog](changelog.md)
 Dated, incident-style history of changes, fixes, and drift reconciliations.

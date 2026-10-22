@@ -2,7 +2,7 @@
 
 **IP**: 192.168.50.115 | **Tailscale**: 100.x.x.x
 **OS**: Ubuntu 24.04 LTS | **Kernel**: 6.17.0-generic
-**CPU**: 8 cores | **RAM**: 15GB | **Swap**: 4GB (742MB used)
+**CPU**: 8 cores | **RAM**: 31GB usable (32GB) | **Swap**: 4GB (742MB used)
 **Docker Engine**: 29.6.1
 
 ## Role: Storage & Downloads Node
@@ -11,23 +11,24 @@ Primary storage server with all physical disks. Runs download clients and the "A
 
 ## Hardware
 
-- **Model**: Dell Inspiron 3668
-- **Motherboard**: Dell 07KY25
-- **Chipset**: Intel H110 (not B250 — 4 SATA ports, PCIe 2.0 from PCH)
-- **CPU**: Intel Kaby Lake (7th gen, 8 cores), integrated HD 630 graphics
-- **RAM**: 15GB DDR4 (max 16GB, 2× U-DIMM slots)
-- **PSU**: 240W (stock Dell, ATX form factor but Dell-proprietary pinout)
-  - Marginal for 5+ HDDs; upgrade recommended if adding HBA
-- **SATA**: 4 ports (SATA 0–3), AHCI mode. 1 used (boot SSD), 3 free
+- **Model**: Custom tower — **Rosewill Helium NAS Max** (11× 3.5" bays). Rebuilt in 2026-10 from
+  the original OEM desktop; see [Storage → USB migration](../storage/usb-migration.md) for the
+  rationale and parts list.
+  - **No OEM parts remain** — no proprietary PSU pinout, no 24→6 adapter, no USB bridge.
+- **Motherboard**: Gigabyte GA-B250-HD3 (ATX, B250, 6× SATA, 4× DIMM)
+- **Chipset**: Intel B250 (Kaby Lake native — no BIOS flash needed for the i7-7700)
+- **CPU**: Intel Kaby Lake i7-7700 (4C/8T, 65W), integrated HD 630 graphics
+- **RAM**: 32GB DDR4
+- **PSU**: **Corsair RM750e 750W** — fully-modular, standard ATX 24-pin (+8-pin EPS), 7× SATA
+  power. Replaces the 240W proprietary unit entirely; 750W is far above the 5-disk spin-up load
+- **SATA**: 6 ports on-board (AHCI), **all 6 in use** — boot SSD + 5 HDDs, **native SATA**.
+  No USB enclosure, no BOT bridge, no HBA
 - **PCIe**:
-  - 1× PCIe 3.0 x16 (PEG, direct to CPU) — primary expansion slot
-  - 1× PCIe 2.0 x1 (PCH) — limited bandwidth (~500 MB/s)
-  - 1× M.2 Key E (WiFi only)
-- **Internal drive bays**:
-  - 1× 3.5" (free)
-  - 1× 2.5" (occupied by boot SSD)
-  - 1× optical (can be adapted to hold an additional 3.5" HDD)
-- **NIC**: enp2s0 (Realtek RTL8111, gigabit) + wlp3s0 (WiFi)
+  - 1× PCIe 3.0 x16 — empty
+  - 1× PCIe 3.0 x4 — empty (future 10GbE/HBA)
+  - 2× PCIe 3.0 x1 — empty
+- **Internal drive bays**: 11× 3.5"; 5 in use + boot SSD on a 2.5"→3.5" bracket
+- **NIC**: enp2s0 (Intel I219-V, gigabit, on-board). No WiFi card installed
 
 ## Users
 

@@ -6,11 +6,12 @@
 |-----------|--------|
 | **CPU** | Intel i7-7700 @ 3.60GHz — 4C/8T, 65W TDP (Kaby Lake) |
 | **GPU** | Intel HD Graphics 630 — QuickSync (7th gen, limited) |
-| **RAM** | 16GB DDR4-2400 (2x8GB TEAMGROUP) |
-| **OS Disk** | 120GB **SATA** SSD (Netac 2.5") — 66G used, 38G free |
-| **Data Disks** | 30.5T raw HDD → 29T mergerFS pool |
-| **NIC** | 1x Gigabit (RTL8111) + WiFi (RTL8821CE) |
-| **Chassis** | Dell Inspiron 3668 Desktop |
+| **RAM** | 32GB DDR4 |
+| **OS Disk** | 120GB **SATA** SSD (Netac 2.5") — 58G used, 45G free |
+| **Data Disks** | 5 HDD (6+6+6+6+8 TB) → 29T mergerFS pool, **native SATA** |
+| **PSU** | Corsair RM750e 750W (standard ATX) — replaced the 240W proprietary unit |
+| **NIC** | 1x Gigabit (Intel I219-V); **x16 + x4 + 2× x1 PCIe slots all free** |
+| **Chassis** | Rosewill Helium NAS Max (11× 3.5" bays) — custom build, no OEM parts |
 | **Swap** | 716MB active (should investigate) |
 | **Role** | Storage + Downloads + *Arr + Apps |
 

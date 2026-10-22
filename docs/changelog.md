@@ -11,6 +11,111 @@ Ops: **Ansible** (GitOps: compose + traefik configs converged from this repo) ·
 
 ## Changelog
 
+### 2026-10-21 — storage node is a custom build; the docs caught up
+
+**Context.** The storage rebuild had already happened, but every live-state doc still described the
+original OEM desktop — including its **240 W proprietary PSU**. A GPU question surfaced it: the
+power advice was based on a PSU that is no longer in the machine.
+
+**Verified live.**
+
+| | Documented (stale) | Actual |
+|---|---|---|
+| Board | OEM H110, 4 SATA | **Gigabyte GA-B250-HD3**, B250, 6 SATA |
+| PSU | 240 W, proprietary pinout | **Corsair RM750e 750 W**, standard ATX 24-pin |
+| Chassis | OEM desktop | **Rosewill Helium NAS Max**, 11× 3.5" |
+| RAM | 15 GB | **32 GB** |
+| Disks | one USB 3.0 BOT bridge | **all 6 on native SATA** (`lsblk` TRAN=sata), no HBA |
+| NIC | Realtek + WiFi | **Intel I219-V** (`enp2s0`), no WiFi card |
+| PCIe | x16 + x1 | x16 + x4 + 2× x1, **all empty** |
+
+**Lesson worth keeping.** USB BOT is queue-depth 1; native SATA is ≈32. The 2.5 GbE upgrade only
+becomes the next ceiling *after* the disks leave the bridge — hence the ordering in the plan.
+
+**Updated.** Server page, spec sheet, README table, and the USB-migration page is now marked as
+pre-build rationale rather than current state.
+
+### 2026-10-21 — Home Assistant becomes a real service, and the first things it needed
+
+Home Assistant moved from "a dashboard on heavensfeel" to a service with dependencies worth
+documenting:
+
+- **Local voice Assist.** `wyoming-whisper` (`base.en`, int8, beam 1) and `wyoming-piper`
+  (`en_US-lessac-medium`) on heavensfeel, no Traefik router — Wyoming is protobuf, not HTTP. The
+  satellite does wake-word detection **on-device** (microWakeWord), so there is no
+  `wyoming-openwakeword` container. `small-int8` was rejected: RTF 1.16 is *slower than real time*.
+  Details and the benchmark: [Voice](services/voice.md).
+- **node_exporter runs as root.** The `rapl` collector cannot read
+  `/sys/class/powercap/*/energy_uj` (mode `0400 root` since the PLATYPUS fix), which is why the
+  per-node CPU power sensors were empty. The change also closed a days-old drift item: the live
+  spec referenced a network id that existed on no node, so it now declares no user network, matching
+  the repo.
+- **Integrations added with API keys, not passwords:** Immich, AdGuard (a dedicated user on all
+  three instances), and the Prometheus exporter. Each is documented on its service page with its
+  revocation path.
+- **Router** `homeassistant` → `http://homeassistant:8123`, internal-only, no rate-limit.
+
+### 2026-10-21 — Bazarr leaves the internet; CopyParty's monitor stops lying
+
+**Bazarr.** Its public Traefik router was removed after an RCE incident — `bazarr.example.com` now
+404s on every node. It is reachable on the LAN at `http://192.168.50.115:6767`, and the port is
+published on the storage node.
+
+**CopyParty.** The uptime monitor had failed every heartbeat since 2026-09-18, and it was the
+monitor that was wrong: it accepted only `200-299`, while the auth wall returned 401/403 to
+anonymous probes. Fixed by giving it a login — a dedicated `monitor` account with `r` on `/` only —
+rather than broadening the accepted codes or weakening the auth wall. Anonymous access still
+returns 403.
+
+### 2026-10-17 — Vaultwarden: 1,395 logins, 37 folders, 1,220 names
+
+The vault was one folder. It was not just unsorted — it was illegible: 1,218 entries were named
+after the URL they were saved from, so browsing meant reading 92 identical rows called `twitter.com`.
+
+**Method that made it safe.** Vaultwarden is server-blind and its API needs a login *and* a live
+TOTP code, while the SQLite database needs only the master password. So the whole pass ran offline
+against a DB snapshot: decrypt locally, classify, write back **ciphertext only**. Plaintext and the
+master password never crossed the network; the server only ever received a pre-encrypted
+transaction. Verified by re-decrypting the result as a client does: 1,395/1,395 decrypt, one folder
+each.
+
+**Two traps worth recording.** The published Bitwarden key derivation is wrong for this vault —
+derive from `users.akey` and verify empirically, or every MAC check fails. And **per-item keys**
+(`ciphers.key`) exist: re-encrypting a name with the account key silently breaks those entries in
+every client. A post-change decrypt is the only thing that catches it.
+
+### 2026-10-15 — internal-only finance stack: money-map → Actual Budget
+
+A transaction pipeline that syncs a bank aggregator (SimpleFIN) into SQLite, applies local
+categorisation rules, and serves a read-only query page — with [Actual Budget](services/actual-budget.md)
+as the budgeting UI on top.
+
+The design decision: **Actual's own SimpleFIN sync is not used.** It restores history and balances
+but drops every category, which is the entire reason the categorisation rules exist. So money-map
+stays the source of truth and a one-shot bridge pushes the register across with `imported_id` as the
+dedupe key — a repeated run imports nothing.
+
+Both routers (`money`, `budget`) are **internal-only**: no Cloudflare record, no rate-limit
+middleware, per the convention in `standalone.yml`. The container holds no state; `/data`,
+`/app/config` and `/app/inbox` are all mounts, and both config files must be present or a sync
+silently falls back to template rules and reclassifies everything.
+
+### 2026-10-11 — on-demand GPU LLM: rent, serve, destroy
+
+The cluster has no GPU and no hosted API carries every model worth running. `scripts/vastctl.sh`
+rents a single-GPU Vast.ai instance (~$0.10–0.14/h), serves an OpenAI-compatible endpoint **over an
+SSH tunnel** (no published ports), and **destroys** the box afterwards.
+
+Vast Serverless was rejected for this workload: it bills GPU compute during model load and storage
+continuously for cold workers. The reaper is **stateless and label-based** (`vastctl-llm-<ttl>h`),
+running from a user timer, so it also catches instances rented from another machine.
+
+Failures that produced rules, all of which cost a session each: Vast ignores a third-party image's
+CMD (start the server over SSH); an old host driver silently runs Ollama on CPU (require
+`cuda_max_good ≥ 12.4`); a marginal host makes the model pull crawl (require `inet_down ≥ 400`);
+`--onstart` stalls provisioning; `nohup … &` flakes (use `setsid`). Full page:
+[On-demand GPU LLM](services/vast-llm.md).
+
 ### 2026-10-03 — off-site backups (Hetzner BX11) + phone/personal-data coverage
 
 **Context:** a phone breakage exposed two gaps — personal data (contacts, SMS,

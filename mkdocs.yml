@@ -71,8 +71,10 @@ nav:
       - milkymiracle: servers/milkymiracle.md
       - milis-wonderspace: servers/milis-wonderspace.md
       - heavensfeel: servers/heavensfeel.md
+      - Steam Deck: servers/steamdeck.md
   - Services:
       - 5etools: services/5etools.md
+      - Actual Budget: services/actual-budget.md
       - AdGuard Home: services/adguard.md
       - Ansible: services/ansible.md
       - Backups: services/backups.md
@@ -85,10 +87,12 @@ nav:
       - FreshRSS: services/freshrss.md
       - Gluetun: services/gluetun.md
       - Grafana: services/grafana.md
+      - Home Assistant: services/homeassistant.md
       - Immich: services/immich.md
       - Jellyfin: services/jellyfin.md
       - Keepalived: services/keepalived.md
       - Masqueradarr: services/masqueradarr.md
+      - money-map: services/money-map.md
       - Navidrome: services/navidrome.md
       - Phone & Personal-Data Backup: services/phone-backup.md
       - Personal Vault Backup: services/vault-backup.md
@@ -99,7 +103,9 @@ nav:
       - Tailscale: services/tailscale.md
       - Traefik: services/traefik.md
       - Vaultwarden: services/vaultwarden.md
+      - Voice (Assist): services/voice.md
       - Vocard: services/vocard.md
+      - On-Demand GPU LLM: services/vast-llm.md
       - Other Services: services/other-services.md
   - Flows:
       - Media Pipeline: flows/media-pipeline.md

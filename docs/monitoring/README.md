@@ -66,7 +66,14 @@ Config at `monitoring/prometheus/prometheus.yml`.
 - job_name: docker-engine  # 192.168.50.115:9323, .122, .129
 - job_name: cadvisor   # 192.168.50.115:9300, .122, .129
 - job_name: prometheus # localhost:9090
+- job_name: traefik    # 192.168.50.115:8080, .122, .129 — router/entrypoint/service metrics
+- job_name: homeassistant # homeassistant:8123/api/prometheus, 60s, bearer token — hass_* series
 ```
+
+`node_exporter` runs as **root** (since 2026-10-21) so its `rapl` collector can export
+`node_rapl_*_joules_total` (CPU package/DRAM energy) — `/sys/class/powercap/*/energy_uj` is mode
+`0400 root` since the PLATYPUS fix. heavensfeel exposes the package twice; filter
+`path!~".*mmio.*"` when summing.
 
 ### Hostname labels
 

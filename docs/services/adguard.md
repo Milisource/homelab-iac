@@ -1,6 +1,6 @@
 # AdGuard Home
 
-**Hosts**: All nodes (global mode) | **Ports**: 53 (DNS), 3020 (web), 8031 (HTTP redirect)
+**Hosts**: All nodes (global mode) | **Ports**: 53 (DNS), 8031 (web), 3020 (dead mapping)
 
 ## Overview
 
@@ -19,8 +19,8 @@ ad blocking, DNS filtering, and DHCP server.
 |------|----------|---------|
 | 53 | TCP/UDP | DNS server |
 | 67 | UDP | DHCP server |
-| 3020 | TCP | Admin web UI |
-| 8031 | TCP | HTTP redirect |
+| 3020 | TCP | Published but **dead**: maps to container `:3000`, and the config binds `http.address: 0.0.0.0:80`. Requests to it are reset |
+| 8031 | TCP | Admin web UI (container `:80`) |
 | 853 | UDP | DNS-over-TLS |
 | 443 | UDP | DNS-over-HTTPS/QUIC |
 

@@ -15,7 +15,7 @@ Three-node Docker Swarm cluster running Ubuntu 24.04. Services deployed via `doc
 
 | Node | IP | Specs | Role | Key Services |
 |------|----|-------|------|-------------|
-| **milis-wonderspace** | 192.168.50.115 | i7-7700, 16GB, 29TB pool | Storage, Downloads | *Arr suite, Navidrome, Vaultwarden, Komga |
+| **milis-wonderspace** | 192.168.50.115 | i7-7700, 32GB, 29TB pool (6 native SATA) | Storage, Downloads | *Arr suite, Navidrome, Vaultwarden, Komga |
 | **milkymiracle** | 192.168.50.122 | i5-9500T, 16GB, UHD 630 | Compute, Media, Proxy | Jellyfin (HW transcode), Traefik, Foundry VTT, CrowdSec LAPI |
 | **heavensfeel** | 192.168.50.129 | N95, 16GB, 512GB SSD | Monitoring, Automation | Grafana, Prometheus, Loki, Vaultwarden, n8n, SearXNG, Diun, FreshRSS |
 

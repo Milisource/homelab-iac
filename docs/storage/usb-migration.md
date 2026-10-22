@@ -1,5 +1,11 @@
-## Hardware Constraints (Dell Inspiron 3668)
-The primary storage node in this Homelab setup is a Dell Inspiron 3668 with an **Intel H110 chipset** (not B250).
+> **Status: executed (2026-10).** The array now runs on a Gigabyte GA-B250-HD3 with 6 native
+> SATA ports in a Rosewill Helium NAS Max — no USB bridge, no HBA. This page is kept as the
+> pre-build rationale and audit; current hardware is in
+> [milis-wonderspace](../servers/milis-wonderspace.md).
+
+## Hardware Constraints (pre-build host)
+The primary storage node was a Dell Inspiron 3668 with an **Intel H110 chipset** (not B250) —
+this section records why the rebuild was needed, not the current state.
 
 ### Motherboard — Dell 07KY25
 | Component | Detail |
