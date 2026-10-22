@@ -361,5 +361,3 @@ http:
         servers:
           - url: "https://192.168.50.129:9091"
         serversTransport: cockpit-transport
-
-
