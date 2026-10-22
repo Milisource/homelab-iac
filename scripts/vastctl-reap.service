@@ -1,0 +1,17 @@
+[Unit]
+Description=Destroy Vast.ai vastctl instances past their TTL
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Run as the operator, not root: the Vast API key lives in the operator's home
+# (~/.config/vastai). A root run finds no credentials (same class of bug as the
+# rclone/vaultwarden jobs). The reaper is stateless and label-based, so it can
+# run on any always-on host that holds the key — see services/vast-llm.md.
+User=user
+Group=user
+Environment=HOME=/home/user
+# System services get a minimal PATH; vastai may live under ~/.local/bin.
+Environment=PATH=/usr/local/bin:/home/user/.local/bin:/usr/bin:/bin
+ExecStart=/usr/local/bin/vastctl.sh reap

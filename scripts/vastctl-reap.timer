@@ -1,0 +1,10 @@
+[Unit]
+Description=Reap Vast.ai LLM instances that are past their TTL
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+Unit=vastctl-reap.service
+
+[Install]
+WantedBy=timers.target

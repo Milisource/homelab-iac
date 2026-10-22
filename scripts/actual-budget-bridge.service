@@ -1,0 +1,18 @@
+[Unit]
+Description=Daily money-map -> Actual Budget bridge
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# the operator is in the docker group, so docker needs no root.
+User=user
+Group=user
+Environment=HOME=/home/user
+# The bridge is a one-shot, so it runs as its own container rather than `docker exec` on a
+# long-lived one the way money-map's sync does. `-T` matters: `docker compose run` allocates
+# a TTY by default, and there is none under systemd.
+ExecStart=/usr/bin/docker compose -f /DATA/Apps/actual/docker-compose.yml --profile bridge run --rm -T actual-budget-bridge
+# A repeat run imports nothing, so a missed one is safe to skip rather than pile up.
+TimeoutStartSec=1800

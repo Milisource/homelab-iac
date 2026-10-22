@@ -1,0 +1,11 @@
+[Unit]
+Description=Destroy Vast.ai vastctl instances past their TTL (user unit)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# User unit: runs as the invoking user, so it reads ~/.config/vastai/vast_api_key.
+# The reaper is stateless/label-based, so no state file is needed.
+Environment=PATH=/usr/local/bin:%h/.local/bin:/usr/bin:/bin
+ExecStart=%h/.local/bin/vastctl.sh reap

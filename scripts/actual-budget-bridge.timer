@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily money-map -> Actual Budget bridge timer
+
+[Timer]
+# 05:55 — ten minutes after money-map-sync (05:45) has pulled the day's transactions.
+OnCalendar=*-*-* 05:55:00
+Persistent=true
+Unit=actual-budget-bridge.service
+
+[Install]
+WantedBy=timers.target

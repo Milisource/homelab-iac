@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily money-map bank sync timer
+
+[Timer]
+# 05:45 — after the overnight backup jobs (04:00/04:30/05:00/05:30) have finished.
+OnCalendar=*-*-* 05:45:00
+Persistent=true
+Unit=money-map-sync.service
+
+[Install]
+WantedBy=timers.target

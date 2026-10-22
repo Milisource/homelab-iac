@@ -1,0 +1,17 @@
+[Unit]
+Description=Daily money-map bank sync (SimpleFIN -> SQLite)
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# the operator is in the docker group, so `docker exec` needs no root.
+User=user
+Group=user
+Environment=HOME=/home/user
+# The container owns the venv, config and credentials, so the sync runs inside it
+# rather than on the host. `docker exec` needs no TTY.
+ExecStart=/usr/bin/docker exec money-map money-map sync
+# A sync is idempotent, so a missed run is safe to skip rather than pile up.
+TimeoutStartSec=600
