@@ -1,0 +1,83 @@
+# actual-budget.yml — Actual Budget: the budgeting surface over money-map's data
+# Deploy: docker compose -f /DATA/Apps/actual/docker-compose.yml up -d
+# Node: milkymiracle (192.168.50.122) — i5-9500T, 16GB, NVMe
+# Config: /DATA/Apps/actual/.env + /DATA/Apps/money-map/.env (the bridge reads both)
+# Domain: budget.example.com — INTERNAL ONLY, no Cloudflare record. See services/traefik.md.
+# Traefik router: actual-budget → http://actual-budget:5006
+# Daily bridge: scripts/actual-budget-bridge.{service,timer} → docker compose run --rm
+# NOT managed by ansible deploy.yml — a standalone app, like money-map and searxng.
+#
+# `up -d` starts the server only. The bridge is a one-shot and carries a profile:
+#   docker compose -f /DATA/Apps/actual/docker-compose.yml --profile bridge run --rm actual-budget-bridge
+#
+# Actual's own SimpleFIN sync is deliberately NOT used: it restores history and balances but
+# drops every category, which is the whole reason money-map's rules exist. See the money-map
+# repo, bridges/actual/.
+
+services:
+  actual-budget:
+    image: actualbudget/actual-server:latest
+    container_name: actual-budget
+    env_file:
+      - path: /DATA/Apps/actual/.env
+        required: false
+    volumes:
+      # A `data/` subdirectory rather than the parent: the abandoned Nov-2025 install
+      # (server-files/, user-files/, selfhost.crt, .migrate) sits one level up and is left
+      # untouched instead of being adopted. Its budget was empty — 0 transactions — and its
+      # password is unknown, so this bootstraps a clean one.
+      - /DATA/Apps/actual/data:/data
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    healthcheck:
+      # No curl or wget in this image; node is already there and 22 has global fetch.
+      # /account/needs-bootstrap answers unauthenticated.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:5006/account/needs-bootstrap').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # money-map → Actual. Pushes the register with `imported_id` as the dedupe key, so a
+  # repeated run imports nothing. Source, image and its README live in the money-map repo
+  # (`bridges/actual/`); this stack only drives it, because the secrets it needs span both
+  # apps and Actual is the one being deployed.
+  actual-budget-bridge:
+    profiles: ["bridge"]
+    build:
+      context: /DATA/Apps/money-map/app/bridges/actual
+    image: money-map-actual-bridge:latest
+    container_name: actual-budget-bridge
+    env_file:
+      # MONEYMAP_SERVER_USER / MONEYMAP_SERVER_PASSWORD
+      - path: /DATA/Apps/money-map/.env
+        required: false
+      # ACTUAL_PASSWORD / ACTUAL_SYNC_ID
+      - path: /DATA/Apps/actual/.env
+        required: false
+    environment:
+      # Container-to-container, not 127.0.0.1 — both sit on traefik-overlay and are
+      # resolvable by name. These override anything of the same name in the env files.
+      MONEYMAP_URL: http://money-map:8080
+      ACTUAL_SERVER_URL: http://actual-budget:5006
+    volumes:
+      # Holds the budget cache and the money-map→Actual account-id map. Without it every run
+      # re-imports everything and creates a second set of accounts.
+      #
+      # This directory MUST exist and be owned by uid 1000 before the first run. Docker
+      # otherwise creates it root-owned, and the container runs as `node` — it then dies
+      # before printing anything, which reads like a silent no-op.
+      - /DATA/Apps/actual/bridge:/state
+    depends_on:
+      - actual-budget
+    networks:
+      - traefik-overlay
+
+networks:
+  traefik-overlay:
+    external: true

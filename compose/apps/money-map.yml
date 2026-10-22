@@ -1,0 +1,43 @@
+# money-map.yml — Finance sync pipeline + read-only query page
+# Deploy: docker compose -f /DATA/Apps/money-map/docker-compose.yml up -d
+# Node: milkymiracle (192.168.50.122) — i5-9500T, 16GB, NVMe
+# Config: /DATA/Apps/money-map/.env + /DATA/Apps/money-map/config/
+# Domain: money.example.com
+# Traefik router: money-map → http://money-map:8080 (see infra/traefik/dynamic/standalone.yml)
+# Daily sync: scripts/money-map-sync.{service,timer} → docker exec money-map money-map sync
+# Source: /home/user/Projects/money-map (laptop) → rsync → /DATA/Apps/money-map/app
+# NOT managed by ansible deploy.yml — a standalone app, like searxng and job-ops.
+#
+# The container holds no state: /data (SQLite + the claimed SimpleFIN credential), /app/config
+# (connectors + categorization rules) and /app/inbox (raw statements and exports) are mounted.
+# Both config files must be mounted — without categories.local.toml a sync falls back to the
+# template rules and reclassifies every transaction.
+
+services:
+  money-map:
+    build:
+      context: ./app
+    image: money-map:latest
+    container_name: money-map
+    env_file:
+      - path: /DATA/Apps/money-map/.env
+        required: false
+    volumes:
+      - /DATA/Apps/money-map/data:/data
+      - /DATA/Apps/money-map/config:/app/config:ro
+      # Raw statements and exports, read by the maintenance importers in scripts/ via
+      # `docker exec`. Read-only: this is the archive of what came in, never written to.
+      - /DATA/Apps/money-map/inbox:/app/inbox:ro
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  traefik-overlay:
+    external: true

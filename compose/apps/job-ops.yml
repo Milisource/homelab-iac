@@ -29,6 +29,35 @@ services:
       retries: 3
       start_period: 10s
 
+  # OpenCode Go shim — injects the x-opencode-session header Go requires, and
+  # downgrades response_format json_schema -> json_object (Go rejects json_schema
+  # with an opaque 400 that Job Ops will not fall back past).
+  # Job Ops is pointed at http://go-shim:8090/v1 (provider: openai_compatible).
+  go-shim:
+    image: node:22-alpine
+    container_name: jobops-go-shim
+    command: ["node", "/app/server.mjs"]
+    working_dir: /app
+    volumes:
+      - ./go-shim:/app:ro
+    environment:
+      - PORT=8090
+      - GO_UPSTREAM=https://opencode.ai/zen/go
+      - GO_SESSION=job-ops
+      - GO_USER_AGENT=job-ops/1.0
+    networks:
+      traefik-overlay:
+        aliases:
+          - go-shim
+          - jobops-go-shim
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8090/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
 networks:
   traefik-overlay:
     external: true

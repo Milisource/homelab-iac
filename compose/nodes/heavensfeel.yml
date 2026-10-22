@@ -438,6 +438,30 @@ services:
       retries: 3
       start_period: 30s
 
+  # ── Wyoming voice pipeline (Home Assistant Assist) ──────────────────────────
+  # No Traefik router: Home Assistant reaches these by container name over
+  # traefik-overlay, and the wire protocol is Wyoming protobuf, not HTTP.
+  # Models/voices cache under /data, so the first start pulls ~500 MB.
+  wyoming-whisper:
+    image: rhasspy/wyoming-whisper:latest
+    container_name: wyoming-whisper
+    command: '--model base.en --compute-type int8 --beam-size 1 --language en --uri tcp://0.0.0.0:10300 --initial-prompt "Home Assistant voice commands. Kitchen, living room, bedroom, office."'
+    volumes:
+      - /DATA/Apps/wyoming-whisper:/data
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
+  wyoming-piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: wyoming-piper
+    command: --voice en_US-lessac-medium --uri tcp://0.0.0.0:10200
+    volumes:
+      - /DATA/Apps/wyoming-piper:/data
+    networks:
+      - traefik-overlay
+    restart: unless-stopped
+
 networks:
   traefik-overlay:
     external: true

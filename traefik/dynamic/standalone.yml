@@ -2,19 +2,21 @@
 # standalone.yml — Traefik dynamic router config (file provider)
 # ──────────────────────────────────────────────────────────────────────────────
 # Rate limiting is applied PER-ROUTER, not at the entrypoint level, so SPA
-# static assets (JS chunks, CSS, fonts) are not rate-limited. This was an issue
-# in a previous iteration and caused massive problems. So, now, only API paths
+# static assets (JS chunks, CSS, fonts) are not rate-limited.  Only API paths
 # or full hosts (for non-SPA services) carry the rate-limit middleware.
+# See dynamic.yml for middleware definitions.
 #
-# See dynamic.yml for middlewear.
-#
-# When adding a new service, ask: Is it a SPA or Non-SPA?
+# When adding a new service:
 #   - SPA (many JS chunks): add TWO routers — one for API paths with
-#     `middlewares: [rate-limit]`, one catch-all without. See `n8n`.
+#     `middlewares: [rate-limit]`, one catch-all without.
 #   - Non-SPA (minimal frontend): add `middlewares: [rate-limit]` to a single
 #     router.  If it's internal-only, omit rate-limit.
 #
 # This file must exist on EVERY node that runs a Traefik replica.
+# Currently: milkymiracle (122), heavensfeel (129), milis-wonderspace (115)
+#
+# Source of truth: the private infra repo, synced to this public mirror with
+# domains and paths sanitized. CI lints + validates + Trivy-scans this file.
 # ──────────────────────────────────────────────────────────────────────────────
 
 http:
@@ -27,7 +29,7 @@ http:
   # ── Routers ─────────────────────────────────────────────────────────────────
   routers:
 
-    # ── heavensfeel (apps stack) ─────────────────────────────────────────
+    # ── heavensfeel (apps stack) ───────────────────────────────────────────────
     vaultwarden:
       entryPoints: [websecure]
       rule: "Host(`vault.example.com`)"
@@ -35,6 +37,7 @@ http:
       middlewares: [rate-limit]
       tls: { certResolver: le }
 
+    # n8n SPA — API/webhook paths rate-limited, static assets bypass
     n8n-api:
       entryPoints: [websecure]
       rule: "Host(`n8n.example.com`) && (PathPrefix(`/rest`) || PathPrefix(`/webhook`) || PathPrefix(`/webhook-waiting`))"
@@ -53,14 +56,7 @@ http:
       service: archisteamfarm
       tls: { certResolver: le }
 
-    freshrss:
-      entryPoints: [websecure]
-      rule: "Host(`rss.example.com`)"
-      service: freshrss
-      middlewares: [rate-limit]
-      tls: { certResolver: le }
-
-    # ── milis-wonderspace (media stack) ──────────────────────────────────────────
+    # ── milis-wonderspace (media stack) ────────────────────────────────────────
     copyparty:
       entryPoints: [websecure]
       rule: "Host(`cloud.example.com`)"
@@ -103,7 +99,7 @@ http:
       service: komga
       tls: { certResolver: le }
 
-    # ── milkymiracle (media + compute) ───────────────────────────────────────
+    # ── milkymiracle (media + compute) ─────────────────────────────────────────
     jellyfin:
       entryPoints: [websecure]
       rule: "Host(`jellyfin.example.com`)"
@@ -116,7 +112,14 @@ http:
       service: foundryvtt
       tls: { certResolver: le }
 
-    # ── Cross-node services ──────────────────────────────────────────────────
+    archivebox:
+      entryPoints: [websecure]
+      rule: "Host(`archive.example.com`)"
+      service: archivebox
+      middlewares: [rate-limit]
+      tls: { certResolver: le }
+
+    # ── Cross-node services ────────────────────────────────────────────────────
     homepage:
       entryPoints: [websecure]
       rule: "Host(`home.example.com`)"
@@ -129,17 +132,13 @@ http:
       service: jobs
       tls: { certResolver: le }
 
-    archivebox:
-      entryPoints: [websecure]
-      rule: "Host(`archive.example.com`)"
-      service: archivebox
-      tls: { certResolver: le }
-
-    bazarr:
-      entryPoints: [websecure]
-      rule: "Host(`bazarr.example.com`)"
-      service: bazarr
-      tls: { certResolver: le }
+    # ── milis-wonderspace services ────────────────────────────────────────
+    # DISABLED 2026-10-19 (Bazarr RCE incident): public route removed; Bazarr is LAN-only.
+    # bazarr:
+    #   entryPoints: [websecure]
+    #   rule: "Host(`bazarr.example.com`)"
+    #   service: bazarr
+    #   tls: { certResolver: le }
 
     prowlarr:
       entryPoints: [websecure]
@@ -147,12 +146,14 @@ http:
       service: prowlarr
       tls: { certResolver: le }
 
+    # ── Immich (milkymiracle) ────────────────────────────────────────────────────
     immich:
       entryPoints: [websecure]
       rule: "Host(`immich.example.com`)"
       service: immich
       tls: { certResolver: le }
 
+    # ── New: heavensfeel services ──────────────────────────────────────────────
     status:
       entryPoints: [websecure]
       rule: "Host(`status.example.com`)"
@@ -183,20 +184,52 @@ http:
       service: termix
       tls: { certResolver: le }
 
+    # ── SearXNG self-hosted search engine (heavensfeel) ────────────────────────
     searxng:
       entryPoints: [websecure]
       rule: "Host(`search.example.com`)"
       service: searxng
       tls: { certResolver: le }
 
+    # ── SLSKD (milis-wonderspace) ──────────────────────────────────────────────
     slskd:
       entryPoints: [websecure]
       rule: "Host(`slskd.example.com`)"
       service: slskd
       tls: { certResolver: le }
 
-    # ── Cockpit (native, per-node) ─────────────────────────────────────────
-    cockpit-server:
+    # ── free-games-claimer (heavensfeel) ───────────────────────────────────────
+    free-games-claimer:
+      entryPoints: [websecure]
+      rule: "Host(`claims.example.com`)"
+      service: free-games-claimer
+      middlewares: [rate-limit]
+      tls: { certResolver: le }
+
+    # ── 5e.tools (static SPA, heavensfeel) ─────────────────────────────────────
+    5etools:
+      entryPoints: [websecure]
+      rule: "Host(`5etools.example.com`)"
+      service: 5etools
+      tls: { certResolver: le }
+
+    # ── Fabula Ultima campaign logs (static, heavensfeel) ──────────────────────
+    fabula:
+      entryPoints: [websecure]
+      rule: "Host(`fabula.example.com`)"
+      service: fabula
+      tls: { certResolver: le }
+
+    # ── FreshRSS (heavensfeel) ─────────────────────────────────────────────────
+    freshrss:
+      entryPoints: [websecure]
+      rule: "Host(`rss.example.com`)"
+      service: freshrss
+      middlewares: [rate-limit]
+      tls: { certResolver: le }
+
+    # ── Cockpit (native, per-node) ─────────────────────────────────────────────
+    cockpit-mili:
       entryPoints: [websecure]
       rule: "Host(`cockpit.example.com`)"
       service: cockpit-server
@@ -212,10 +245,51 @@ http:
       service: cockpit-heaven
       tls: { certResolver: le }
 
+    # ── Gluetun exception (qbittorrent behind VPN, host-IP routing) ────────────
     qbt:
       entryPoints: [websecure]
       rule: "Host(`qbt.example.com`)"
       service: qbt
+      tls: { certResolver: le }
+
+    # ── money-map (finance sync + read-only query page) ────────────────────────
+    # INTERNAL ONLY — no Cloudflare record, so it resolves only through the AdGuard
+    # wildcard. Hence no rate-limit: this file's convention is that public routers
+    # carry one and internal-only routers don't. (It had one until 2026-10-15.)
+    money-map:
+      entryPoints: [websecure]
+      rule: "Host(`money.example.com`)"
+      service: money-map
+      tls: { certResolver: le }
+
+    # ── Actual Budget (milkymiracle) ───────────────────────────────────────────
+    # INTERNAL ONLY: no Cloudflare CNAME, so it resolves only through the AdGuard
+    # wildcard. That is also why it carries no rate-limit — this file's convention is
+    # that public routers get one and internal-only routers don't. Do not add a
+    # Cloudflare record for this one.
+    actual-budget:
+      entryPoints: [websecure]
+      rule: "Host(`budget.example.com`)"
+      service: actual-budget
+      tls: { certResolver: le }
+
+    # ── Sure (milkymiracle) ────────────────────────────────────────────────────
+    # INTERNAL ONLY: no Cloudflare CNAME, so it resolves only through the AdGuard
+    # wildcard. No rate-limit, per this file's convention. Do not add a CF record.
+    sure:
+      entryPoints: [websecure]
+      rule: "Host(`sure.example.com`)"
+      service: sure
+      tls: { certResolver: le }
+
+    # ── Home Assistant (heavensfeel) ───────────────────────────────────────────
+    # INTERNAL ONLY: camera footage and vacuum control. No Cloudflare CNAME, so it
+    # resolves only through the AdGuard wildcard. No rate-limit, per this file's
+    # convention. Do not add a CF record.
+    homeassistant:
+      entryPoints: [websecure]
+      rule: "Host(`ha.example.com`)"
+      service: homeassistant
       tls: { certResolver: le }
 
   # ── Services ────────────────────────────────────────────────────────────────
@@ -232,10 +306,12 @@ http:
     komga:          { loadBalancer: { servers: [{ url: "http://komga:25600" }] } }
     jellyfin:       { loadBalancer: { servers: [{ url: "http://jellyfin:8096" }] } }
     foundryvtt:     { loadBalancer: { servers: [{ url: "http://foundryvtt:30000" }] } }
+    archivebox:     { loadBalancer: { servers: [{ url: "http://archivebox:8000" }] } }
     homepage:       { loadBalancer: { servers: [{ url: "http://homepage:3000" }] } }
     jobs:           { loadBalancer: { servers: [{ url: "http://job-ops:3001" }] } }
-    archivebox:     { loadBalancer: { servers: [{ url: "http://archivebox:8000" }] } }
-    bazarr:         { loadBalancer: { servers: [{ url: "http://bazarr:6767" }] } }
+
+    # ── New services ───────────────────────────────────────────────────────────
+    # bazarr:         { loadBalancer: { servers: [{ url: "http://bazarr:6767" }] } }
     prowlarr:       { loadBalancer: { servers: [{ url: "http://prowlarr:9696" }] } }
     uptime-kuma:    { loadBalancer: { servers: [{ url: "http://uptime-kuma:3001" }] } }
     changedetection: { loadBalancer: { servers: [{ url: "http://changedetection:5000" }] } }
@@ -243,12 +319,33 @@ http:
     qui:            { loadBalancer: { servers: [{ url: "http://qui:7476" }] } }
     termix:         { loadBalancer: { servers: [{ url: "http://termix:5600" }] } }
     searxng:        { loadBalancer: { servers: [{ url: "http://searxng:8080" }] } }
-    qbt:            { loadBalancer: { servers: [{ url: "http://192.168.50.115:8090" }] } }
-    slskd:          { loadBalancer: { servers: [{ url: "http://slskd:5030" }] } }
-    immich:         { loadBalancer: { servers: [{ url: "http://immich_server:2283" }] } }
-    freshrss:       { loadBalancer: { servers: [{ url: "http://freshrss:80" }] } }
+    money-map:      { loadBalancer: { servers: [{ url: "http://money-map:8080" }] } }
+    sure:           { loadBalancer: { servers: [{ url: "http://192.168.50.122:3010" }] } }
+    actual-budget:  { loadBalancer: { servers: [{ url: "http://actual-budget:5006" }] } }
+    homeassistant:  { loadBalancer: { servers: [{ url: "http://homeassistant:8123" }] } }
 
-    # ── Cockpit (native per-node, HTTPS backend) ────────────────────────────
+    # Gluetun exception — VPN-isolated, direct host IP
+    qbt:            { loadBalancer: { servers: [{ url: "http://192.168.50.115:8090" }] } }
+
+    # SLSKD
+    slskd:          { loadBalancer: { servers: [{ url: "http://slskd:5030" }] } }
+
+    # Immich
+    immich:         { loadBalancer: { servers: [{ url: "http://immich_server:2283" }] } }
+
+    # ── free-games-claimer (heavensfeel) ──────────────────────────────────────
+    free-games-claimer:     { loadBalancer: { servers: [{ url: "http://free-games-claimer:7080" }] } }
+
+    # ── 5e.tools (heavensfeel) ───────────────────────────────────────────────
+    5etools:       { loadBalancer: { servers: [{ url: "http://5etools:80" }] } }
+
+    # ── Fabula Ultima campaign logs (heavensfeel) ───────────────────────────────
+    fabula:        { loadBalancer: { servers: [{ url: "http://fabula:80" }] } }
+
+    # ── FreshRSS (heavensfeel) ────────────────────────────────────────────────
+    freshrss:      { loadBalancer: { servers: [{ url: "http://freshrss:80" }] } }
+
+    # ── Cockpit (native per-node, HTTPS backend) ──────────────────────────────
     cockpit-server:
       loadBalancer:
         servers:
@@ -264,3 +361,5 @@ http:
         servers:
           - url: "https://192.168.50.129:9091"
         serversTransport: cockpit-transport
+
+
