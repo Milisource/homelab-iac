@@ -1,8 +1,8 @@
 # Voice (Local Assist Pipeline)
 
 **Satellite**: an old Android phone running the Home Assistant Companion app (minimal build)
-**Pipeline host**: [heavensfeel](heavensfeel.md) — same node as Home Assistant, so STT/TTS is a
-container-to-container hop
+**Pipeline host**: [heavensfeel](../servers/heavensfeel.md) — same node as Home Assistant, so
+STT/TTS is a container-to-container hop
 **Cloud dependency**: none
 
 ## Pipeline
